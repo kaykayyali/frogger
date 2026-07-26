@@ -196,3 +196,28 @@ impatient players will mash R, and the bug silently broke their run.
   around the audio resume path on the next user gesture.
 - A "soft pause" that lets the frog finish its hop — would be cute but
   the current snap-to-pause is simpler and matches arcade conventions.
+
+## Iteration 8 — 2026-07-26 — Off-screen fix + ground shadow
+
+**What:** Two related polish fixes:
+
+1. The off-screen check while riding a platform was reading `Frog.x`,
+   which is the unused sub-tile slot. Fixed to read the actual visual
+   center from `riding.x + ridingOffset + TILE_W/2` — same value the
+   renderer uses.
+2. Added a ground shadow ellipse under the frog that shrinks to ~40%
+   while mid-hop. Replaces the static shadow-less draw.
+
+**Why:** Players were occasionally surviving off the right edge of the
+screen because the off-screen test never matched. The shadow makes the
+hop read as actual lift instead of a sprite teleport.
+
+**Measured:** Smoke still passes. Manual review: riding a log off the
+right edge now reliably kills.
+
+**Rejected:**
+- Per-platform shadow only for logs — would need to render two layers
+  (log shadow + frog shadow). Single frog shadow on the ground is
+  simpler and reads fine.
+- Rotating the frog to face the riding direction — would look weird
+  when the frog is just standing on a moving log. Kept facing static.

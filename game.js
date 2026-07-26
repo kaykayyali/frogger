@@ -534,8 +534,11 @@
           } else if (Frog.riding.speed < 0 && Frog.riding.x + Frog.riding.len < -16) {
             Frog.riding.x = W + 16 + Math.random() * Frog.riding.len * 0.5;
           }
-          // Off-screen while on a log/turtle
-          if (Frog.x < -TILE_W * 0.5 || Frog.x > W - TILE_W * 0.5) {
+          // Off-screen while on a log/turtle. Frog's visual center is
+          // riding.x + ridingOffset + TILE_W/2 — check that, not Frog.x
+          // (which is the unused sub-tile offset slot).
+          const visualX = Frog.riding.x + Frog.ridingOffset + TILE_W / 2;
+          if (visualX < -TILE_W * 0.4 || visualX > W + TILE_W * 0.4) {
             this.killFrog('offscreen');
             return;
           }
@@ -885,6 +888,16 @@
         Frog.facing === 'left' ? -Math.PI / 2 :
         Frog.facing === 'right' ? Math.PI / 2 :
         Frog.facing === 'down' ? Math.PI : 0;
+      // Shadow under the frog. Shrinks while mid-hop so the frog feels
+      // like it's lifting off.
+      if (!Frog.riding) {
+        const shadowScale = Frog.hopT > 0 ? 0.4 + Frog.hopT * 0.6 : 1;
+        const groundY = ROW(Frog.row) + TILE - 6;
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.beginPath();
+        ctx.ellipse(cx, groundY, (TILE_W / 3) * shadowScale, 3 * shadowScale, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.save();
       ctx.translate(cx, cy);
       if (Frog.hopT <= 0) ctx.rotate(facingRot);
