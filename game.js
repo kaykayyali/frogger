@@ -927,6 +927,32 @@
       for (let i = 0; i < State.lives - 1; i++) {
         this.drawMiniFrog(W - 12 - i * 14, 10);
       }
+      // Sound indicator: small speaker glyph + slash when muted.
+      const sx = 130, sy = HUD_H / 2;
+      ctx.fillStyle = Sfx.enabled ? '#fff' : '#888';
+      ctx.beginPath();
+      ctx.moveTo(sx, sy - 3);
+      ctx.lineTo(sx + 4, sy - 3);
+      ctx.lineTo(sx + 8, sy - 7);
+      ctx.lineTo(sx + 8, sy + 7);
+      ctx.lineTo(sx + 4, sy + 3);
+      ctx.lineTo(sx, sy + 3);
+      ctx.closePath();
+      ctx.fill();
+      if (Sfx.enabled) {
+        ctx.beginPath();
+        ctx.arc(sx + 11, sy, 3, -0.6, 0.6);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = '#ff3a3a';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(sx - 2, sy - 6);
+        ctx.lineTo(sx + 12, sy + 6);
+        ctx.stroke();
+      }
     },
     drawMiniFrog(cx, cy) {
       const ctx = this.ctx;

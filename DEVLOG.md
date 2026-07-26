@@ -537,3 +537,18 @@ accounted for the 1.5 s gate).
 - Listening to `window.resize` only — some mobile browsers fire
   `orientationchange` and not `resize` (and vice versa), so all three
   (resize, orientationchange, visualViewport.resize) are bound.
+
+## Iteration 19 — 2026-07-26 — Sound on/off HUD indicator
+
+**What:** Drew a small speaker glyph in the HUD that turns into a
+muted speaker with a red slash when sound is off. Updates instantly
+when the player presses M.
+
+**Why:** Audio toggle existed since v1 but was invisible. Players
+who pressed M by accident had no feedback.
+
+**Measured:** Smoke test still passes.
+
+**Rejected:**
+- Bigger speaker icon — would crowd the existing HUD columns.
+- Volume slider — would need a real settings menu.
