@@ -244,3 +244,28 @@ directions.
 - Tap-on-canvas-as-restart — the touchstart handler is now used for
   swipe capture, and a single tap is indistinguishable from a swipe
   start. Players use Space or R or the dpad on touch devices.
+
+## Iteration 10 — 2026-07-26 — Buzzing fly + home-entry input lock
+
+**What:** Two small visual/game-feel improvements:
+
+1. The fly on a lily-pad now hovers with a fast sine on x and y, and
+   its wings flap visibly on a 30 Hz sine. Players can now distinguish
+   it from the frog bonus at a glance.
+2. Landing on a (non-level-completing) home slot locks input for
+   250 ms so the sparkles + bonus floater have time to read before the
+   player can hop again.
+
+**Why:** The static fly was hard to read in screenshots. The home-entry
+input lock fixes a tiny but real annoyance: players would hop into a
+slot, see the +50 pop up, and immediately press up again — only to
+walk straight into traffic.
+
+**Measured:** Smoke test passes. The lock is purely a `dt` decrement
+on a number, no timer objects to clean up.
+
+**Rejected:**
+- Freezing the world during the 250 ms lock — would look janky because
+  traffic stops moving. Locking input only.
+- Different fly animation patterns per bonus type — just one fly, with
+  one buzz pattern, keeps it readable.

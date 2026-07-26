@@ -380,6 +380,7 @@
       // Cancel any pending death-respawn timeout so it can't decrement
       // lives after restart has reset them.
       if (this._dyingTimer) { clearTimeout(this._dyingTimer); this._dyingTimer = null; }
+      this._homeLock = 0;
       this.platforms = spawnPlatforms();
       Frog.reset();
       State.score = 0;
@@ -433,6 +434,9 @@
       // If mid-hop, ignore further input until arrival — prevents
       // chained-input speed exploit.
       if (Frog.hopT > 0) return;
+      // Ignore input briefly after landing on a home slot — gives the
+      // celebration particles time to read before the next move.
+      if (this._homeLock > 0) return;
       let nr = Frog.row, nc = Frog.col;
       if (dir === 'up')    { nr -= 1; Frog.facing = 'up'; }
       if (dir === 'down')  { nr += 1; Frog.facing = 'down'; }
@@ -480,6 +484,10 @@
             Particles.emitConfetti(W / 2, ROW(1) + TILE / 2);
             Particles.flash('#ffffff', 0.35);
             Sfx.win();
+          } else {
+            // Brief celebration lock so the player can't immediately
+            // jump again — let the sparkles read.
+            this._homeLock = 0.25;
           }
         } else {
           // Slotted into a home column that's already filled or off a slot
@@ -527,6 +535,11 @@
     },
 
     update(dt) {
+      // Tick the brief home-celebration input lock.
+      if (this._homeLock > 0) {
+        this._homeLock -= dt;
+        if (this._homeLock < 0) this._homeLock = 0;
+      }
       // Move platforms
       for (const p of this.platforms) {
         p.x += p.speed * dt;
@@ -781,15 +794,21 @@
             ctx.beginPath(); ctx.arc(x + TILE_W / 2 - 2.5, y + TILE / 2 - 2, 1.5, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(x + TILE_W / 2 + 2.5, y + TILE / 2 - 2, 1.5, 0, Math.PI * 2); ctx.fill();
           } else if (State.homeBonus[i] === 'fly') {
-            // Tiny purple fly: body + wings.
+            // Tiny purple fly with buzz animation — body hovers, wings flap.
+            const t = performance.now() / 1000;
+            const flyX = x + TILE_W / 2 + Math.sin(t * 8 + i) * 2;
+            const flyY = y + TILE / 2 + Math.sin(t * 11 + i * 1.3) * 1.5;
+            // Body
             ctx.fillStyle = '#cc66ff';
-            ctx.fillRect(x + TILE_W / 2 - 4, y + TILE / 2 - 1, 8, 3);
-            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillRect(flyX - 4, flyY - 1, 8, 3);
+            // Wings (flap on a fast sine)
+            const flap = Math.abs(Math.sin(t * 30));
+            ctx.fillStyle = 'rgba(255,255,255,' + (0.4 + 0.5 * flap) + ')';
             ctx.beginPath();
-            ctx.ellipse(x + TILE_W / 2 - 3, y + TILE / 2 - 3, 3, 2, -0.4, 0, Math.PI * 2);
+            ctx.ellipse(flyX - 3, flyY - 3 - flap * 2, 3, 2 + flap * 1.5, -0.4, 0, Math.PI * 2);
             ctx.fill();
             ctx.beginPath();
-            ctx.ellipse(x + TILE_W / 2 + 3, y + TILE / 2 - 3, 3, 2, 0.4, 0, Math.PI * 2);
+            ctx.ellipse(flyX + 3, flyY - 3 - flap * 2, 3, 2 + flap * 1.5, 0.4, 0, Math.PI * 2);
             ctx.fill();
           }
         }
