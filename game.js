@@ -124,7 +124,10 @@
         if ((k === 'r' || k === 'R') && e.shiftKey) {
           State.highScore = 0;
           State.bestLevel = 1;
-          try { localStorage.removeItem('frogger.high'); } catch (e) {}
+          try {
+            localStorage.removeItem('frogger.high');
+            localStorage.removeItem('frogger.bestLevel');
+          } catch (e) {}
           e.preventDefault();
         }
       };
@@ -1265,7 +1268,8 @@
         if (State.justBeatBest) lines.push('NEW BEST!');
         lines.push('SCORE ' + State.score);
         if (State.highScore > 0) lines.push('BEST ' + State.highScore);
-        lines.push('LV ' + State.bestLevel);
+        lines.push('REACHED LV ' + State.bestLevel);
+        if (State.bestLevel > 1) lines.push('BEST LV ' + State.bestLevel);
         lines.push('');
         lines.push('PRESS SPACE OR TAP BUTTON');
         lines.push('SHIFT+R CLEARS BEST');
@@ -1408,15 +1412,20 @@
     if (global.visualViewport) {
       global.visualViewport.addEventListener('resize', onResize);
     }
-    // Load high score
+    // Load high score + best level
     try {
       const hs = parseInt(localStorage.getItem('frogger.high') || '0', 10);
       if (!Number.isNaN(hs)) State.highScore = hs;
+      const bl = parseInt(localStorage.getItem('frogger.bestLevel') || '1', 10);
+      if (!Number.isNaN(bl) && bl > 1) State.bestLevel = bl;
     } catch (e) { /* localStorage may be blocked */ }
     Game.start();
-    // Persist high score on page hide
+    // Persist high score + best level on page hide
     global.addEventListener('beforeunload', () => {
-      try { localStorage.setItem('frogger.high', String(State.highScore)); } catch (e) {}
+      try {
+        localStorage.setItem('frogger.high', String(State.highScore));
+        localStorage.setItem('frogger.bestLevel', String(State.bestLevel));
+      } catch (e) {}
     });
   }
   global.addEventListener('DOMContentLoaded', boot);

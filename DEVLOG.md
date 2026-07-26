@@ -570,3 +570,20 @@ small dark patch under the frog to attach it to the platform.
 - A reflection of the frog on the water surface — pretty but costly
   (extra ctx.save + transform). The simple dark patch reads the same.
 - Per-log wave pattern — would compete with the platform animation.
+
+## Iteration 21 — 2026-07-26 — Persistent best level
+
+**What:** Storing and loading `frogger.bestLevel` alongside
+`frogger.high` in localStorage. Game Over panel now shows both
+"REACHED LV N" and "BEST LV N" when the run reached level 2+.
+
+**Why:** Best level was tracked in-memory but discarded on reload.
+Players who climbed to level 6 and refreshed the page had no record
+of it.
+
+**Measured:** Smoke passes. Shift+R now also clears the best level.
+
+**Rejected:**
+- Showing best level on the HUD — already crowded with 1UP / TIME /
+  HI / LV / lives / speaker.
+- Showing both score and level on the same line — visually busy.
