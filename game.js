@@ -251,6 +251,24 @@
         });
       }
     },
+    // Concentric ring particles — used on successful landing in a slot
+    // and on the new-round start. Spawns a few colored rings that
+    // expand and fade.
+    emitRipples(cx, cy, color) {
+      for (let i = 0; i < 3; i++) {
+        State.particles.push({
+          kind: 'ripple',
+          x: cx, y: cy,
+          r: 4,
+          r0: 4,
+          r1: 26 + i * 6,
+          age: 0,
+          life: 0.5 + i * 0.1,
+          color: color || '#39d353',
+          width: 2,
+        });
+      }
+    },
     emitConfetti(cx, cy) {
       const palette = ['#ff3a3a', '#39d353', '#ffea00', '#7ad7ff', '#ffffff', '#ff7ad9'];
       const N = 50;
@@ -301,12 +319,23 @@
       }
     },
     draw(ctx) {
-      // Particles
+      // Particles — draw rect particles and ring particles together.
       for (const p of State.particles) {
-        const t = 1 - p.age / p.life;
-        ctx.globalAlpha = Math.max(0, t);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+        if (p.kind === 'ripple') {
+          const t = 1 - p.age / p.life;
+          const r = p.r0 + (p.r1 - p.r0) * (1 - t);
+          ctx.globalAlpha = Math.max(0, t);
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = p.width;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          const t = 1 - p.age / p.life;
+          ctx.globalAlpha = Math.max(0, t);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+        }
       }
       ctx.globalAlpha = 1;
       // Floaters
@@ -532,8 +561,10 @@
           Frog.col = nc;
           Frog.x = 0; Frog.y = 0;
           Frog.riding = null;
-          // Sparkle at the slot position.
+          // Sparkle + ripple at the slot position.
           Particles.emitSparkles(COL(nc) + TILE_W / 2, ROW(1) + TILE / 2);
+          Particles.emitRipples(COL(nc) + TILE_W / 2, ROW(1) + TILE / 2,
+                                bonus > 0 ? '#ffea00' : '#39d353');
           Particles.flash(bonus > 0 ? '#ffea00' : '#39d353', bonus > 0 ? 0.3 : 0.18);
           // Show the bonus points briefly above the slot.
           if (bonus > 0) {

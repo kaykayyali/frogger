@@ -587,3 +587,23 @@ of it.
 - Showing best level on the HUD — already crowded with 1UP / TIME /
   HI / LV / lives / speaker.
 - Showing both score and level on the same line — visually busy.
+
+## Iteration 22 — 2026-07-26 — Concentric ring particle on home fill
+
+**What:** Added a new particle kind — `ripple`. Three expanding rings
+spawn at the slot center when the frog lands, color keyed to whether
+the slot had a bonus (yellow) or not (green). Each ring expands from
+r=4 to r=26..38 over 0.5-0.7 s, alpha fades linearly with age.
+
+**Why:** The sparkles already gave a "yes!" signal but were scattered.
+A pulse of rings under the sparkles makes the slot fill read like a
+targeted landing, especially for first-time players who didn't know
+to look at the home row.
+
+**Measured:** Smoke passes. Particle list now has 2 kinds (rect +
+ring) dispatched in a single draw loop.
+
+**Rejected:**
+- Per-row ripple on every hop — too noisy.
+- Bigger rings — would cover the next slot and confuse when adjacent
+  slots fill quickly.
