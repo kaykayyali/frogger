@@ -41,3 +41,22 @@ with cars and trucks, start grass on row 12. Lives system (5 frogs),
 - A "fly bonus" (classic Frogger had a fly that appeared randomly on a
   home slot for 200 points). Could come later.
 - Multi-life timers — single global timer for v1.
+
+## Iteration 1 — 2026-07-26 — HUD + panel polish
+
+**What:** Reworked the HUD layout (1UP / TIME / HI columns, lives icons in
+the upper-right, LV badge) and the modal panels (FROGGER title, GAME OVER,
+LEVEL CLEAR) so text no longer overflows.
+
+**Why:** Smoke screenshot showed the title screen had `ow keys / WASD...`
+bleeding outside the panel and the HUD had `HI 00000` overlapping `TIME 60`.
+
+**Measured:** Smoke test still passes (score 20 after 2 hops). New
+screenshot shows clean panel with all lines inside the border, HUD
+legible. Lives icons sit in the corner without overlapping the time.
+
+**Rejected:**
+- Bigger panel (would hide more game). Kept at 100 px padding so players
+  see the field while reading.
+- Different fonts — system monospace is consistent enough and avoids
+  asset loading.

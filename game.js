@@ -423,22 +423,36 @@
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, W, HUD_H);
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 16px monospace';
+      ctx.font = 'bold 11px monospace';
       ctx.textBaseline = 'middle';
       ctx.textAlign = 'left';
-      ctx.fillText('SCORE ' + String(State.score).padStart(5, '0'), 8, HUD_H / 2);
+      // 1UP column
+      ctx.fillText('1UP', 8, HUD_H / 2 - 7);
+      ctx.font = 'bold 14px monospace';
+      ctx.fillText(String(State.score).padStart(6, '0'), 8, HUD_H / 2 + 6);
+      // Level in middle-left
+      ctx.font = 'bold 11px monospace';
+      ctx.fillStyle = '#39d353';
+      ctx.fillText('LV ' + State.level, 80, HUD_H / 2 - 7);
+      ctx.font = 'bold 14px monospace';
+      ctx.fillStyle = '#ffea00';
+      ctx.fillText(String(Math.max(0, Math.ceil(State.timer))).padStart(3, '0'),
+                   W / 2 + 12, HUD_H / 2 + 6);
+      ctx.font = 'bold 11px monospace';
+      ctx.fillStyle = '#fff';
       ctx.textAlign = 'center';
-      ctx.fillText('TIME ' + Math.ceil(State.timer), W / 2, HUD_H / 2);
+      ctx.fillText('TIME', W / 2 + 12, HUD_H / 2 - 7);
+      // High score column
       ctx.textAlign = 'right';
-      ctx.fillText('LV ' + State.level, W - 100, HUD_H / 2);
-      // Lives as small frog icons
-      for (let i = 0; i < State.lives - 1; i++) {
-        this.drawMiniFrog(W - 24 - i * 18, HUD_H / 2);
-      }
-      // High score
-      ctx.textAlign = 'left';
+      ctx.font = 'bold 11px monospace';
       ctx.fillStyle = '#aaa';
-      ctx.fillText('HI ' + String(State.highScore).padStart(5, '0'), 130, HUD_H / 2);
+      ctx.fillText('HI', W - 8, HUD_H / 2 - 7);
+      ctx.font = 'bold 14px monospace';
+      ctx.fillText(String(State.highScore).padStart(6, '0'), W - 8, HUD_H / 2 + 6);
+      // Lives as small frog icons in the upper-right corner.
+      for (let i = 0; i < State.lives - 1; i++) {
+        this.drawMiniFrog(W - 12 - i * 14, 10);
+      }
     },
     drawMiniFrog(cx, cy) {
       const ctx = this.ctx;
@@ -587,37 +601,57 @@
     drawOverlays() {
       const ctx = this.ctx;
       if (State.phase === 'title') {
-        this.drawPanel('FROGGER', 'Arrow keys / WASD to move. Space to start. R restarts. M mutes.');
+        this.drawPanel('FROGGER', [
+          'ARROWS / WASD TO MOVE',
+          'SPACE TO START',
+          'R RESTARTS  •  M MUTES',
+          '',
+          'REACH THE LILY-PADS',
+        ]);
       } else if (State.phase === 'gameover') {
-        this.drawPanel('GAME OVER', 'Final score: ' + State.score + '\nClick or press Space to play again.');
+        this.drawPanel('GAME OVER', [
+          'SCORE ' + State.score,
+          State.highScore > 0 ? 'BEST ' + State.highScore : '',
+          '',
+          'SPACE TO RETRY',
+        ]);
       } else if (State.phase === 'roundwin') {
-        this.drawPanel('LEVEL ' + State.level + ' COMPLETE', 'Bonus +' + LEVEL_BONUS + '\nClick or press Space for level ' + (State.level + 1));
+        this.drawPanel('LEVEL ' + State.level + ' CLEAR', [
+          'BONUS +' + LEVEL_BONUS,
+          '',
+          'SPACE FOR LV ' + (State.level + 1),
+        ]);
       }
     },
-    drawPanel(title, body) {
+    drawPanel(title, lines) {
       const ctx = this.ctx;
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
       ctx.fillRect(0, 0, W, H);
-      const px = 60, py = 220, pw = W - 120, ph = 200;
-      ctx.fillStyle = '#111';
+      const px = 50, py = 200, pw = W - 100, ph = 220;
+      ctx.fillStyle = '#0a1a0a';
       ctx.fillRect(px, py, pw, ph);
       ctx.strokeStyle = '#39d353';
       ctx.lineWidth = 2;
       ctx.strokeRect(px, py, pw, ph);
+      // Title
       ctx.fillStyle = '#39d353';
-      ctx.font = 'bold 36px monospace';
+      ctx.font = 'bold 32px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(title, W / 2, py + 60);
-      ctx.fillStyle = '#fff';
-      ctx.font = '14px monospace';
-      const lines = body.split('\n');
-      for (let i = 0; i < lines.length; i++) {
-        ctx.fillText(lines[i], W / 2, py + 110 + i * 22);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(title, W / 2, py + 50);
+      // Body lines
+      ctx.font = 'bold 14px monospace';
+      let y = py + 100;
+      for (const ln of lines) {
+        if (!ln) { y += 12; continue; }
+        ctx.fillStyle = '#fff';
+        ctx.fillText(ln, W / 2, y);
+        y += 22;
       }
       // Blink prompt
       if (Math.floor(performance.now() / 500) % 2 === 0) {
         ctx.fillStyle = '#ffea00';
-        ctx.fillText('— PRESS SPACE / TAP —', W / 2, py + ph - 22);
+        ctx.fillText('— PRESS SPACE —', W / 2, py + ph - 22);
       }
     },
   };
