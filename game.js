@@ -107,6 +107,7 @@
         if (k === ' ' || k === 'Enter') { Game.tryStart(); unlock(); e.preventDefault(); }
         if (k === 'r' || k === 'R') { Game.restart(); unlock(); e.preventDefault(); }
         if (k === 'm' || k === 'M') { Sfx.setEnabled(!Sfx.enabled); }
+        if (k === 'p' || k === 'P') { Game.togglePause(); unlock(); e.preventDefault(); }
       };
       global.addEventListener('keydown', onKey, { passive: false });
       // Touch buttons
@@ -352,6 +353,9 @@
       // Cancel any in-flight animations to prevent double-speed loops.
       if (State.rafId) cancelAnimationFrame(State.rafId);
       State.rafId = null;
+      // Cancel any pending death-respawn timeout so it can't decrement
+      // lives after restart has reset them.
+      if (this._dyingTimer) { clearTimeout(this._dyingTimer); this._dyingTimer = null; }
       this.platforms = spawnPlatforms();
       Frog.reset();
       State.score = 0;
@@ -393,6 +397,11 @@
         Frog.reset();
         State.phase = 'play';
       }
+    },
+
+    togglePause() {
+      if (State.phase === 'play') State.phase = 'paused';
+      else if (State.phase === 'paused') State.phase = 'play';
     },
 
     moveFrog(dir) {
@@ -474,8 +483,12 @@
         Particles.flash('#ff3a3a', 0.25);
         Sfx.hit();
       }
-      // Wait a beat then respawn or game over.
-      setTimeout(() => {
+      // Wait a beat then respawn or game over. Track the timer id so
+      // a restart() during the dying window can cancel it.
+      if (this._dyingTimer) clearTimeout(this._dyingTimer);
+      this._dyingTimer = setTimeout(() => {
+        this._dyingTimer = null;
+        if (State.phase !== 'dying') return;       // restart happened
         State.lives -= 1;
         if (State.lives <= 0) {
           State.phase = 'gameover';
@@ -594,13 +607,17 @@
       // Drain any queued input direction at the start of a frame.
       // moveFrog() is a no-op when phase !== 'play' or mid-hop, so it's
       // safe to call every frame.
-      if (Input.pendingDir) {
+      if (Input.pendingDir && State.phase !== 'paused') {
         const d = Input.pendingDir;
         Input.pendingDir = null;
         this.moveFrog(d);
       }
-      this.update(dt);
-      Particles.update(dt);
+      // Skip simulation while paused but keep rendering so the overlay
+      // shows a frozen field.
+      if (State.phase !== 'paused') {
+        this.update(dt);
+        Particles.update(dt);
+      }
       Render.frame();
       State.rafId = requestAnimationFrame((t) => this.loop(t));
     },
@@ -913,6 +930,7 @@
           'ARROWS / WASD TO MOVE',
           'SPACE TO START',
           'R RESTARTS  •  M MUTES',
+          'P PAUSES',
           '',
           'REACH THE LILY-PADS',
         ]);
@@ -929,6 +947,17 @@
           '',
           'SPACE FOR LV ' + (State.level + 1),
         ]);
+      } else if (State.phase === 'paused') {
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(0, 0, W, H);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffea00';
+        ctx.font = 'bold 36px monospace';
+        ctx.fillText('PAUSED', W / 2, H / 2 - 16);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 14px monospace';
+        ctx.fillText('PRESS P TO RESUME', W / 2, H / 2 + 20);
       }
     },
     drawPanel(title, lines) {

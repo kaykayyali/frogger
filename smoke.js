@@ -70,6 +70,15 @@ async function main() {
     lives: globalThis.State.lives,
     lastTimestamp: globalThis.State.lastTimestamp,
   }));
+  // Test pause/resume.
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(100);
+  await page.keyboard.press('p');
+  await page.waitForTimeout(100);
+  const paused = await page.evaluate(() => globalThis.State.phase);
+  await page.keyboard.press('p');
+  await page.waitForTimeout(100);
+  const resumed = await page.evaluate(() => globalThis.State.phase);
   await page.screenshot({ path: path.join(ROOT, 'smoke.png') });
   await browser.close();
   server.close();
@@ -78,6 +87,8 @@ async function main() {
   if (afterRestart.score !== 0 || afterRestart.lives !== 5) {
     console.error('FAIL: restart did not reset:', afterRestart); process.exit(1);
   }
-  console.log('SMOKE OK', state, afterRestart);
+  if (paused !== 'paused') { console.error('FAIL: pause did not work:', paused); process.exit(1); }
+  if (resumed !== 'play') { console.error('FAIL: resume did not work:', resumed); process.exit(1); }
+  console.log('SMOKE OK', state, afterRestart, 'paused=' + paused, 'resumed=' + resumed);
 }
 main().catch((e) => { console.error(e); process.exit(1); });

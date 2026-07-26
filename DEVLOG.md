@@ -171,3 +171,28 @@ platform per frame, ~12 platforms = trivial.
 - Per-pixel sprite wheels — kept rect+spoke marker; readable and free.
 - Skid marks or brake-light flashes — would be cool but doesn't fit the
   arcade tone.
+
+## Iteration 7 — 2026-07-26 — Pause + dying-timer cancel
+
+**What:** P toggles pause, which freezes the simulation but keeps
+rendering so the player sees a frozen field plus a "PAUSED" overlay.
+Smoke test caught a real bug while building this: when the player
+presses R during the 600 ms death-respawn window, the old setTimeout
+fired after restart() and decremented lives back to 4 even though the
+restart had reset them to 5. Fixed by tracking `_dyingTimer` on Game
+and clearing it on restart, plus a `phase !== 'dying'` guard inside the
+callback as a belt-and-braces.
+
+**Why:** Pause is just good UX — players want to step away. The dying
+cancel matters because dying is a long enough window (600 ms) that
+impatient players will mash R, and the bug silently broke their run.
+
+**Measured:** Smoke test now exercises pause/resume. New failure mode
+(`paused=paused resumed=play`) is checked explicitly.
+
+**Rejected:**
+- Pausing audio too — Web Audio's AudioContext.suspend would also
+  pause all scheduled SFX. Could be a nice touch but adds complexity
+  around the audio resume path on the next user gesture.
+- A "soft pause" that lets the frog finish its hop — would be cute but
+  the current snap-to-pause is simpler and matches arcade conventions.
