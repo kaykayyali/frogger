@@ -24,19 +24,43 @@ Open `index.html` in any modern browser. No build step.
 | Start / Restart round | Space or Enter |
 | Restart from scratch | R |
 | Mute toggle | M |
+| Pause / Resume | P |
+| Clear best score + best level | Shift+R |
 
-On touch devices an on-screen d-pad appears automatically.
+On touch devices an on-screen d-pad appears automatically. Swipe
+gestures on the canvas also work (axis-locked, 16 px / 600 ms
+threshold).
+
+## Responsive layout
+
+The canvas is fitted to the viewport while preserving the 3:4
+aspect ratio. The backing store is sized with `devicePixelRatio`
+(capped at 2x) so HiDPI screens stay crisp. On window resize or
+orientation change the canvas re-fits. Touch input is converted from
+CSS pixels to game coordinates via `Layout.clientToGame`. The
+in-canvas RESTART button on the Game Over panel uses the same
+hit-test path so it works at any size.
 
 ## Architecture
 
-Single-page HTML5 Canvas game, no framework, no build step. Three files:
+## Architecture
 
-- `index.html` — markup, viewport meta, touch-control buttons.
-- `styles.css` — layout, responsive canvas sizing, touch-control styling.
+Single-page HTML5 Canvas game, no framework, no build step. Files:
+
+- `index.html` — markup, viewport meta, touch-control buttons, canvas
+  aria-label.
+- `styles.css` — layout, responsive canvas sizing, touch-control styling,
+  d-pad visibility media queries.
 - `audio.js` — tiny Web Audio API synth. Each SFX (`hop`, `drown`, `hit`,
   `home`, `win`, `gameOver`, `tick`) is a short oscillator/noise envelope.
   No audio asset files.
-- `game.js` — the whole game: input, world generation, update loop, render.
+- `game.js` — the whole game: input, layout (HiDPI canvas), world
+  generation, update loop, render.
+- `smoke.js` — Playwright headless smoke test (start, hop, collision,
+  death, restart, pause/resume).
+- `smoke-responsive.js` — Playwright test at mobile 390×844 @2x and
+  desktop 1280×800 @1x; verifies HiDPI scaling, resize re-fit, tap
+  coordinate mapping, and in-canvas RESTART button.
 
 ### Game layout
 
