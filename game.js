@@ -1186,8 +1186,21 @@
         Frog.facing === 'right' ? Math.PI / 2 :
         Frog.facing === 'down' ? Math.PI : 0;
       // Shadow under the frog. Shrinks while mid-hop so the frog feels
-      // like it's lifting off.
-      if (!Frog.riding) {
+      // like it's lifting off. When riding, draw a shadow on the
+      // platform under the frog so the frog still has a visible
+      // attachment point.
+      if (Frog.riding) {
+        // No shadow under the frog when riding (the platform itself
+        // is its anchor). But draw a small wisp beneath the platform
+        // hinting at the water below.
+        const cfg = ROW_CFG[Frog.row];
+        if (cfg && cfg.kind === 'river') {
+          ctx.fillStyle = 'rgba(0,0,0,0.18)';
+          ctx.beginPath();
+          ctx.ellipse(cx, ROW(Frog.row) + TILE - 2, TILE_W / 3, 2, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
         const shadowScale = Frog.hopT > 0 ? 0.4 + Frog.hopT * 0.6 : 1;
         const groundY = ROW(Frog.row) + TILE - 6;
         ctx.fillStyle = 'rgba(0,0,0,0.35)';

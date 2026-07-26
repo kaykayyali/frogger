@@ -552,3 +552,21 @@ who pressed M by accident had no feedback.
 **Rejected:**
 - Bigger speaker icon — would crowd the existing HUD columns.
 - Volume slider — would need a real settings menu.
+
+## Iteration 20 — 2026-07-26 — Shadow under platform when frog rides river
+
+**What:** When the frog rides a log/turtle, instead of a ground shadow
+(there's no ground in the river), draw a small thin shadow under the
+frog on the platform itself, plus a faint hint of the water surface
+below the platform.
+
+**Why:** Pre-iter20, riding a log had no anchor for the frog visually.
+The frog sprite "floated" with the log but the player's eye wanted a
+small dark patch under the frog to attach it to the platform.
+
+**Measured:** Smoke passes.
+
+**Rejected:**
+- A reflection of the frog on the water surface — pretty but costly
+  (extra ctx.save + transform). The simple dark patch reads the same.
+- Per-log wave pattern — would compete with the platform animation.
