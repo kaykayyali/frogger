@@ -337,3 +337,27 @@ sprinkled through the codebase during the search. No regressions.
   attract sequence.
 - Per-level change-card messages ("FAST TRAFFIC AHEAD!") — text-heavy;
   the LEVEL N number is enough.
+
+## Iteration 14 — 2026-07-26 — Key-repeat suppression
+
+**What:** Track the last key string + timestamp. If the OS sends a
+repeated keydown for the same key within 80 ms (which is below the OS
+key-repeat rate on every browser I checked), drop it. Reset on keyup
+so a deliberate release-and-press still registers.
+
+**Why:** Without this, holding ArrowUp causes the frog to chain-hops
+once the 150 ms hop animation finishes — because the OS keeps firing
+keydown events. The mid-hop guard `if (Frog.hopT > 0) return` already
+prevents multi-hops within a single hop, but the *direction* still
+gets queued up in `pendingDir` and fires the moment the hop completes.
+Players who hold ArrowUp to climb expected to tap it.
+
+**Measured:** Smoke test passes. Held-key behaviour is now: 1 hop per
+press. To multi-hop, the player has to tap repeatedly.
+
+**Rejected:**
+- Polling `e.repeat` from the event itself — the OS rate (~30 Hz) is
+  too fast for the game's 150 ms hop, so even one repeat would queue.
+  Timing-based suppression matches the hop duration.
+- `preventDefault()` on every keydown — would break the rest of the
+  page; only call it when we actually consume the key.

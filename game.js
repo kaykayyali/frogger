@@ -94,10 +94,23 @@
   // ---------- Input ----------
   const Input = {
     pendingDir: null,   // queued direction (one-step queue so quick taps register)
+    lastKey: '',        // last key string seen by the handler — used to
+                        // suppress OS key-repeat (ArrowUp held = 1 hop, not 30).
+    lastKeyTime: 0,
     bind(canvas) {
       const unlock = () => Sfx.resume();
       const onKey = (e) => {
         const k = e.key;
+        // OS key-repeat sends repeated keydown events at the OS repeat
+        // rate. We only want the *first* press to queue a move. Treat
+        // any repeat within 80 ms of the same key as a hold (ignored).
+        const now = performance.now();
+        if (e.repeat && (k === this.lastKey) && (now - this.lastKeyTime < 80)) {
+          e.preventDefault();
+          return;
+        }
+        this.lastKey = k;
+        this.lastKeyTime = now;
         const map = {
           ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
           w: 'up', s: 'down', a: 'left', d: 'right',
@@ -116,6 +129,8 @@
         }
       };
       global.addEventListener('keydown', onKey, { passive: false });
+      // Reset lastKey on keyup so a release-and-press registers again.
+      global.addEventListener('keyup', () => { this.lastKey = ''; });
       // Touch buttons
       document.querySelectorAll('.tc-btn').forEach((btn) => {
         const dir = btn.getAttribute('data-dir');
