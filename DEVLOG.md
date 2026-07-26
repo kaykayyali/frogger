@@ -607,3 +607,19 @@ ring) dispatched in a single draw loop.
 - Per-row ripple on every hop — too noisy.
 - Bigger rings — would cover the next slot and confuse when adjacent
   slots fill quickly.
+
+## Iteration 23 — 2026-07-26 — Title screen best-score line
+
+**What:** When the persisted high score is > 0, append a "BEST N" line
+to the title panel so returning players see what they're chasing.
+
+**Why:** The high score was visible only on the HUD HI column and
+the game-over panel. Players who reload the page never see the
+current best until they start a run.
+
+**Measured:** Smoke passes.
+
+**Rejected:**
+- Putting "BEST N" as the top line of the panel — would compete with
+  the FROGGER title.
+- Showing the best level on the title screen too — would crowd.

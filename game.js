@@ -1286,14 +1286,16 @@
         // Animated demo frog hops back and forth above the panel —
         // pure eye candy so the title screen feels alive.
         this.drawTitleDemoFrog();
-        this.drawPanel('FROGGER', [
+        const titleLines = [
           'ARROWS / WASD TO MOVE',
           'SPACE TO START',
           'R RESTARTS  •  M MUTES',
           'P PAUSES  •  SHIFT+R CLEARS',
           '',
           'REACH THE LILY-PADS',
-        ], 240);
+        ];
+        if (State.highScore > 0) titleLines.push('BEST ' + State.highScore);
+        this.drawPanel('FROGGER', titleLines, 240);
       } else if (State.phase === 'gameover') {
         const lines = [];
         if (State.justBeatBest) lines.push('NEW BEST!');
