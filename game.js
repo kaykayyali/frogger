@@ -180,6 +180,7 @@
     homeFilled: [false, false, false, false, false],  // 5 slots
     homeBonus:  [null, null, null, null, null],     // 'frog'|'fly'|null per slot
     deathsThisRound: 0,  // number of frog deaths during this round
+    countdownT: 0,       // ready-countdown remaining (sec); blocks input
     floaters:  [],       // floating score texts
     bestLevel: 1,        // highest level reached this session
     levelCardT: 0,       // level-title card remaining time (sec)
@@ -425,6 +426,7 @@
       State.fly = null;
       State.flyNext = 0;
       State.justBeatBest = false;
+      State.countdownT = 0;
       applyDifficulty(1);
       // Reset lastTimestamp so the first frame after restart isn't a giant dt.
       State.lastTimestamp = performance.now();
@@ -442,6 +444,7 @@
     tryStart() {
       if (State.phase === 'title' || State.phase === 'gameover') {
         State.phase = 'play';
+        State.countdownT = 1.5;       // brief "ready?" before input unlocks
       } else if (State.phase === 'roundwin') {
         // Advance to next round (handled in loop after fanfare)
         State.level += 1;
@@ -467,6 +470,7 @@
 
     moveFrog(dir) {
       if (State.phase !== 'play') return;
+      if (State.countdownT > 0) return;       // input gated during ready
       // If mid-hop, ignore further input until arrival — prevents
       // chained-input speed exploit.
       if (Frog.hopT > 0) return;
@@ -592,6 +596,11 @@
       if (State.levelCardT > 0) {
         State.levelCardT -= dt;
         if (State.levelCardT < 0) State.levelCardT = 0;
+      }
+      // Tick ready-countdown. Input is gated until it reaches 0.
+      if (State.countdownT > 0) {
+        State.countdownT -= dt;
+        if (State.countdownT < 0) State.countdownT = 0;
       }
       // Moving fly bonus. Spawns after a random delay on level 1+; flies
       // across a fixed row for ~6 s then despawns. If the frog is on the
@@ -778,6 +787,23 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('LEVEL ' + State.level, W / 2, y + TILE / 2);
+      }
+      // Ready-countdown overlay: big number on the field so the player
+      // has a beat to find the frog.
+      if (State.countdownT > 0 && State.phase === 'play') {
+        const n = Math.ceil(State.countdownT);
+        const cy = ROW(Frog.row) + TILE / 2;
+        const cx = COL(Frog.col) + TILE_W / 2;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(cx - 32, cy - 32, 64, 64);
+        ctx.strokeStyle = '#ffea00';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(cx - 32, cy - 32, 64, 64);
+        ctx.fillStyle = '#ffea00';
+        ctx.font = 'bold 36px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(n), cx, cy);
       }
       this.drawOverlays();
     },

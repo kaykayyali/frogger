@@ -49,6 +49,8 @@ async function main() {
   // Start the game.
   await page.keyboard.press('Space');
   await page.waitForFunction(() => globalThis.State.phase === 'play', null, { timeout: 2000 });
+  // Wait past the ready-countdown before sending moves.
+  await page.waitForTimeout(1600);
   // Move a few times — drive into traffic to exercise the road.
   for (const k of ['ArrowUp', 'ArrowUp', 'ArrowLeft', 'ArrowRight']) {
     await page.keyboard.press(k);

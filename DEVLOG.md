@@ -431,3 +431,26 @@ round.
 - Higher bonus for higher levels — already implicit: faster traffic
   + shorter timer makes the perfect harder to earn, so the value
   naturally scales.
+
+## Iteration 18 — 2026-07-26 — Ready-countdown on round start
+
+**What:** When tryStart transitions phase to 'play' (from title or
+game over), a 1.5 s countdown begins. Input is gated while the
+countdown ticks. A big yellow number 3..2..1 draws over the frog's
+spawn position.
+
+**Why:** Without it, players who tap Space might queue an ArrowUp
+during the same frame, then watch the frog hop into traffic before
+they've oriented themselves. The countdown gives them a beat.
+
+**Measured:** Smoke test updated to wait past the countdown (1600 ms)
+before sending arrow presses. New lastTimestamp jumps from ~1500 to
+~3100 confirming the countdown ran.
+
+**Rejected:**
+- Slower countdown (3..2..1) — feels like busy-work for a quick game.
+  1.5 s is enough for one breath.
+- Cancel countdown on any input — would let impatient players skip
+  the beat. The gate forces orientation time.
+- A "GO!" flash after countdown — the moment the gate lifts is
+  obvious enough; the frog is already visible.
