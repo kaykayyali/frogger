@@ -454,3 +454,41 @@ before sending arrow presses. New lastTimestamp jumps from ~1500 to
   the beat. The gate forces orientation time.
 - A "GO!" flash after countdown — the moment the gate lifts is
   obvious enough; the frog is already visible.
+
+## Exhausted — 2026-07-26
+
+After 18 iterations, no more improvements feel worth their weight.
+
+Ideas considered and rejected:
+
+- **Snake hazard** (classic Frogger side-scrolling snake across the
+  middle). Would require new collision logic and art, but the road
+  and river already provide plenty of challenge. Diminishing returns.
+- **Two-player mode**. Game is built around a single frog. Splitting
+  the canvas would shrink the play area to where the lanes are
+  unreadable.
+- **Persistent best level**. Best score is the meaningful long-term
+  stat; best level resets per session so players feel fresh progress.
+- **Pixel-art spritesheet**. Pure shapes keep the file under 30 KB,
+  load instantly, and match the retro aesthetic. A sprite sheet would
+  add bytes and complexity without changing the game's character.
+- **Settings menu** (difficulty, lane count, control remap). The game
+  is already well-tuned and accessible. A settings menu would be
+  dead weight for a one-screen arcade game.
+- **Replay system** (record inputs, replay the run). Interesting but
+  adds a large bookkeeping cost for a feature few players would use.
+- **Online leaderboard**. Requires a backend; out of scope for a
+  no-build-step vanilla JS page.
+- **Colorblind palette toggle**. The current palette is already
+  high-contrast green-vs-red-vs-blue, which holds up for most
+  color-vision deficiencies. Could be added if requested.
+- **Music**. Web Audio synthesis could produce a chiptune loop, but
+  the focus has been on per-event SFX. A music toggle would feel
+  grafted-on rather than designed.
+- **Per-pixel sprite animation of the frog** (alternating leg frames).
+  Would require a sprite sheet and an animation state machine. The
+  current ellipse frog reads fine and loads instantly.
+
+Final state: 18 iterations, 19 commits, 6 source files
+(`index.html`, `styles.css`, `audio.js`, `game.js`, `smoke.js`,
+`smoke.png` / `smoke-title.png`), 0 dependencies.
