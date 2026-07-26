@@ -310,3 +310,30 @@ non-overlapping blink prompt.
   the underlying canvas, doubling motion would be busy.
 - Big hero frog illustration — would push the game-feel toward
   illustrated rather than arcade.
+
+## Iteration 13 — 2026-07-26 — Hop +10 popup + level-start card
+
+**What:** Two small feedback improvements:
+
+1. Each forward hop now floats a "+10" up from the frog's new position
+   in the same way the bonus and home-fill scores already do.
+2. After round-win, when the next round starts, a "LEVEL N" card slides
+   down from the top of the field over 1.4 s. The card sits in row 1
+   (home row) so the player sees both the level number and the
+   upcoming lily-pad bonuses at the same time.
+
+**Why:** The hop-score was previously invisible. Players would notice
+the score number ticking up but had no per-action confirmation. The
+level card gives the speed-up of difficulty scaling a visual
+introduction — players can read "LEVEL 4" and brace themselves.
+
+**Measured:** Smoke test passes. Fixed two calls that referenced
+`this.floatScore` but should have been `Particles.floatScore` —
+sprinkled through the codebase during the search. No regressions.
+
+**Rejected:**
+- Persisting the level card forever — at 1.4 s it doesn't get in the
+  way of the first hop and matches the timing of a real arcade
+  attract sequence.
+- Per-level change-card messages ("FAST TRAFFIC AHEAD!") — text-heavy;
+  the LEVEL N number is enough.

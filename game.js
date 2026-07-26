@@ -166,6 +166,7 @@
     homeBonus:  [null, null, null, null, null],     // 'frog'|'fly'|null per slot
     floaters:  [],       // floating score texts
     bestLevel: 1,        // highest level reached this session
+    levelCardT: 0,       // level-title card remaining time (sec)
     lastTimestamp: 0,
     rafId: null,
     particles: [],      // active particle effects
@@ -399,6 +400,7 @@
       State.homeBonus = [null, null, null, null, null];
       State.phase = 'title';
       Particles.clear();
+      State.levelCardT = 0;
       applyDifficulty(1);
       // Reset lastTimestamp so the first frame after restart isn't a giant dt.
       State.lastTimestamp = performance.now();
@@ -428,6 +430,7 @@
         this.rollHomeBonuses();
         this.platforms = spawnPlatforms();
         Frog.reset();
+        State.levelCardT = 1.4;       // show level card for 1.4s
         State.phase = 'play';
       }
     },
@@ -460,6 +463,10 @@
       Frog.setCell(nr, nc);
       Frog.hopT = 1;        // hop animation duration timer
       Sfx.hop();
+      // Floating "+10" above the frog for forward progress.
+      if (dir === 'up') {
+        Particles.floatScore(COL(nc) + TILE_W / 2, ROW(nr) + TILE / 2 - 14, '+10', '#39d353');
+      }
       // Reaching a home slot
       if (nr === 1) {
         const idx = HOME_COLS.indexOf(nc);
@@ -483,7 +490,7 @@
           Particles.flash(bonus > 0 ? '#ffea00' : '#39d353', bonus > 0 ? 0.3 : 0.18);
           // Show the bonus points briefly above the slot.
           if (bonus > 0) {
-            this.floatScore(COL(nc) + TILE_W / 2, ROW(1) - 6, '+' + bonus, '#ffea00');
+            Particles.floatScore(COL(nc) + TILE_W / 2, ROW(1) - 6, '+' + bonus, '#ffea00');
           }
           // Check level completion
           if (State.homeFilled.every(Boolean)) {
@@ -547,6 +554,11 @@
       if (this._homeLock > 0) {
         this._homeLock -= dt;
         if (this._homeLock < 0) this._homeLock = 0;
+      }
+      // Tick level-title card.
+      if (State.levelCardT > 0) {
+        State.levelCardT -= dt;
+        if (State.levelCardT < 0) State.levelCardT = 0;
       }
       // Move platforms
       for (const p of this.platforms) {
@@ -687,6 +699,21 @@
       this.drawField();
       this.drawFrog();
       Particles.draw(ctx);
+      // Level-title card slides up from the top of the field.
+      if (State.levelCardT > 0) {
+        const t = 1 - State.levelCardT / 1.4;
+        const y = HUD_H + (1 - t) * TILE;
+        ctx.fillStyle = '#0a1a0a';
+        ctx.fillRect(0, y, W, TILE);
+        ctx.strokeStyle = '#39d353';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(0, y, W, TILE);
+        ctx.fillStyle = '#39d353';
+        ctx.font = 'bold 18px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('LEVEL ' + State.level, W / 2, y + TILE / 2);
+      }
       this.drawOverlays();
     },
     drawHud() {
