@@ -361,3 +361,30 @@ press. To multi-hop, the player has to tap repeatedly.
   Timing-based suppression matches the hop duration.
 - `preventDefault()` on every keydown — would break the rest of the
   page; only call it when we actually consume the key.
+
+## Iteration 15 — 2026-07-26 — Moving fly bonus + d-pad visibility
+
+**What:** Added a fly that spawns every 12-24 seconds and flies across
+either the median or the start row at 90 px/sec for 7 seconds. When the
+frog is on the same tile as the fly, the frog gets +200 and the fly
+vanishes with sparkles. Also added a CSS rule to hide the d-pad on
+screens wider than 720px (desktop / tablet-with-keyboard users don't
+need it and it eats canvas vertical space).
+
+**Why:** The lily-pad fly was a stationary prize — players would route
+to it once they noticed. A moving fly is a different *kind* of bonus:
+you can choose to chase it (risky, since the road never stops) or
+ignore it for the safer home pad. Plus it's another moving thing on
+screen, which keeps the world alive.
+
+**Measured:** Smoke passes. The fly spawn rate scales with the gap
+between sightings (12-24 s) so it never feels spammy.
+
+**Rejected:**
+- Spawning the fly in a road row — would be impossible to collect
+  without dying. Kept to safe rows only.
+- Variable fly speed scaling with level — would make the bonus harder
+  to grab as the player gets better. Kept it the same speed so it
+  stays a fair bonus.
+- Showing a "FLY INCOMING!" warning — would break the surprise; the
+  wing-flap and visible motion already announce it.

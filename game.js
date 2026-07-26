@@ -182,6 +182,8 @@
     floaters:  [],       // floating score texts
     bestLevel: 1,        // highest level reached this session
     levelCardT: 0,       // level-title card remaining time (sec)
+    fly: null,           // moving fly bonus across the playfield
+    flyNext: 0,          // seconds until next fly spawn
     lastTimestamp: 0,
     rafId: null,
     particles: [],      // active particle effects
@@ -416,6 +418,8 @@
       State.phase = 'title';
       Particles.clear();
       State.levelCardT = 0;
+      State.fly = null;
+      State.flyNext = 0;
       applyDifficulty(1);
       // Reset lastTimestamp so the first frame after restart isn't a giant dt.
       State.lastTimestamp = performance.now();
@@ -574,6 +578,38 @@
       if (State.levelCardT > 0) {
         State.levelCardT -= dt;
         if (State.levelCardT < 0) State.levelCardT = 0;
+      }
+      // Moving fly bonus. Spawns after a random delay on level 1+; flies
+      // across a fixed row for ~6 s then despawns. If the frog is on the
+      // same tile as the fly when it despawns, the frog gets 200 pts.
+      State.flyNext -= dt;
+      if (!State.fly && State.flyNext <= 0 && State.level >= 1) {
+        // Pick a random safe row (start or median) so the fly is
+        // collectible. Start is row 12, median is row 6.
+        State.fly = {
+          row: Math.random() < 0.5 ? 6 : 12,
+          col: -1,                  // off-screen left
+          speed: 90,
+          t: 0,
+          life: 7,
+        };
+        State.flyNext = 12 + Math.random() * 12;   // 12-24s until next
+      }
+      if (State.fly) {
+        State.fly.t += dt;
+        // Move across the canvas at a steady clip.
+        State.fly.col += State.fly.speed * dt / TILE_W;
+        if (State.fly.t > State.fly.life) State.fly = null;
+        // Collision with frog: same cell and the fly is alive.
+        else if (State.fly.col >= 0 && State.fly.col < COLS
+                 && Math.round(State.fly.col) === Frog.col
+                 && State.fly.row === Frog.row) {
+          State.score += 200;
+          Particles.emitSparkles(COL(Frog.col) + TILE_W / 2, ROW(Frog.row) + TILE / 2);
+          Particles.floatScore(COL(Frog.col) + TILE_W / 2, ROW(Frog.row) - 4, '+200', '#ffea00');
+          Sfx.bonus();
+          State.fly = null;
+        }
       }
       // Move platforms
       for (const p of this.platforms) {
@@ -871,6 +907,23 @@
       // Draw platforms
       for (const p of Game.platforms) {
         this.drawPlatform(p);
+      }
+      // Moving fly bonus (drawn over platforms so it's always visible).
+      if (State.fly) {
+        const fx = State.fly.col * TILE_W + TILE_W / 2;
+        const fy = ROW(State.fly.row) + TILE / 2;
+        const t = performance.now() / 1000;
+        const wob = Math.sin(t * 12) * 2;
+        ctx.fillStyle = '#cc66ff';
+        ctx.fillRect(fx - 4 + wob, fy - 1, 8, 3);
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        const flap = Math.abs(Math.sin(t * 30));
+        ctx.beginPath();
+        ctx.ellipse(fx - 3 + wob, fy - 3 - flap * 2, 3, 2 + flap * 1.5, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(fx + 3 + wob, fy - 3 - flap * 2, 3, 2 + flap * 1.5, 0.4, 0, Math.PI * 2);
+        ctx.fill();
       }
     },
     drawPlatform(p) {

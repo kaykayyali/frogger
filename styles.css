@@ -68,6 +68,12 @@ canvas#game {
   border-color: #888;
 }
 
+/* Hide touch controls on screens wider than 720px (likely desktops with
+   keyboard or tablets with external keyboards). Keeps the canvas alone. */
+@media (min-width: 721px) {
+  #touch-controls { display: none !important; }
+}
+
 @media (hover: none) and (pointer: coarse) {
   #touch-controls { display: flex; }
 }
