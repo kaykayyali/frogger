@@ -1305,6 +1305,7 @@
           'REACH THE LILY-PADS',
         ];
         if (State.highScore > 0) titleLines.push('BEST ' + State.highScore);
+        if (State.bestLevel > 1) titleLines.push('BEST LV ' + State.bestLevel);
         this.drawPanel('FROGGER', titleLines, 240);
       } else if (State.phase === 'gameover') {
         const lines = [];

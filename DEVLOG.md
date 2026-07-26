@@ -644,3 +644,27 @@ celebration read.
   would feel out of sync. Skipped by not scaling the hop duration
   itself (only the simulation).
 - Stopping the world entirely — same UX problem as pausing.
+
+## Iteration 25 — 2026-07-26 — Accessibility + best-level on title
+
+**What:** Two small polish items:
+
+1. Title panel now shows "BEST LV N" when the persisted best level is
+   > 1, matching the game-over panel.
+2. Canvas got `role="img"` and an `aria-label` describing the game so
+   screen-reader users hear what they're about to play.
+
+**Why:** Best level was visible only on game-over. Players reloading
+to retry saw only their best score, not how far they'd gotten.
+
+The aria-label is a tiny addition but brings the page closer to
+standard accessibility practice for canvas-based games.
+
+**Measured:** Both smoke tests still pass.
+
+**Rejected:**
+- A full live-region for screen-reader game events — would require
+  aria-live + an event announcer, more than the one-line addition
+  can carry.
+- A separate "Stats" panel on the title screen — would crowd the
+  existing panel.
