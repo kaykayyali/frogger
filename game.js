@@ -47,6 +47,30 @@
     /* row 12 start  */ { kind: 'safe' },
   ];
 
+  // Difficulty curve — applied to ROW_CFG values on level transitions.
+  // Each level bumps platform speed and tightens gaps. Caps so the world
+  // stays readable past level 10.
+  function applyDifficulty(level) {
+    const lvl = Math.max(1, level);
+    // Speeds scale ~15% per level up to +120%; gaps shrink ~7% per level
+    // down to 60%. Caps keep late-game playable.
+    const speedScale = Math.min(2.2, 1 + (lvl - 1) * 0.15);
+    const gapScale    = Math.max(0.6, 1 - (lvl - 1) * 0.07);
+    for (const cfg of ROW_CFG) {
+      if (cfg.kind === 'road' || cfg.kind === 'river') {
+        cfg.speed = cfg.baseSpeed * speedScale;
+        cfg.gap   = cfg.baseGap   * gapScale;
+      }
+    }
+  }
+  // Capture the base values for the difficulty curve.
+  for (const cfg of ROW_CFG) {
+    if (cfg.kind === 'road' || cfg.kind === 'river') {
+      cfg.baseSpeed = cfg.speed;
+      cfg.baseGap   = cfg.gap;
+    }
+  }
+
   // Home slot columns — 5 evenly spaced, leaving wall columns on edges.
   const HOME_COLS = [1, 3, 5, 7, 9];
   const FROG_START = { row: 12, col: 5 };  // bottom-center-ish
@@ -281,6 +305,7 @@
       State.timer = TIMER_START;
       State.timerMax = TIMER_START;
       State.homeFilled = [false, false, false, false, false];
+      applyDifficulty(1);
       this.platforms = spawnPlatforms();
       Frog.reset();
       this.loop(performance.now());
@@ -300,6 +325,7 @@
       State.homeFilled = [false, false, false, false, false];
       State.phase = 'title';
       Particles.clear();
+      applyDifficulty(1);
       // Reset lastTimestamp so the first frame after restart isn't a giant dt.
       State.lastTimestamp = performance.now();
       // Re-prime loop. start() is safe to call here — it kicks a new RAF
@@ -316,6 +342,7 @@
         State.timerMax = Math.max(20, TIMER_START - (State.level - 1) * 3);
         State.timer = State.timerMax;
         State.homeFilled = [false, false, false, false, false];
+        applyDifficulty(State.level);
         this.platforms = spawnPlatforms();
         Frog.reset();
         State.phase = 'play';

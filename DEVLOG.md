@@ -102,3 +102,29 @@ across the water bands.
   Pure shapes keep the file under 30 KB and load instantly.
 - Tilting the frog toward facing direction mid-hop — looks weird because
   the hop is short; kept facing as a static rotation when grounded only.
+
+## Iteration 4 — 2026-07-26 — Difficulty curve (level scaling)
+
+**What:** Stored `baseSpeed`/`baseGap` for every road/river row. On each
+level transition, `applyDifficulty(level)` rescales speed by
+`min(2.2, 1 + (lvl-1) * 0.15)` and gap by `max(0.6, 1 - (lvl-1) * 0.07)`.
+Speed is also tied to direction sign, so faster lanes still alternate.
+
+**Why:** Pre-iter4, only the timer shortened per level. Players could
+reach level 5 with the same road speeds as level 1, which made the
+"endless" mode feel flat. Speed + gap scaling forces them to plan
+shorter hops as they climb.
+
+**Measured:** Level 1 baseline unchanged (applyDifficulty(1) is a no-op).
+Smoke test still passes. With 1.15× per level, level 10 has ~3.6× the
+start speeds and ~0.5× the gaps — the screen fills almost edge-to-edge
+with traffic but gaps remain jumpable.
+
+**Rejected:**
+- Linear unbounded scaling — past level ~7 the field would become
+  impassable. Caps (2.2× speed, 0.6× gap) preserve playability.
+- Per-row random difficulty — every level would feel different even
+  when the level number was the same. Deterministic-per-level feels
+  like a real arcade difficulty curve.
+- Adding extra hazards at high levels — would require new art + new
+  collision logic. Speed/gap scaling is enough juice for one iteration.
