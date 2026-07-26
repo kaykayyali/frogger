@@ -117,9 +117,33 @@
         btn.addEventListener('touchstart', fire, { passive: false });
         btn.addEventListener('mousedown',  fire);
       });
+      // Swipe gestures on the canvas: detect horizontal/vertical swipes
+      // and map to direction keys. Threshold tuned for phones — a quick
+      // flick beats a slow drag.
+      let sx = 0, sy = 0, stime = 0;
+      canvas.addEventListener('touchstart', (e) => {
+        const t = e.touches[0];
+        sx = t.clientX; sy = t.clientY; stime = performance.now();
+        unlock();
+      }, { passive: true });
+      canvas.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+      canvas.addEventListener('touchend', (e) => {
+        const t = e.changedTouches[0];
+        const dx = t.clientX - sx, dy = t.clientY - sy;
+        const dt = performance.now() - stime;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 16 || dt > 600) return;
+        // Lock to whichever axis has more travel.
+        if (Math.abs(dx) > Math.abs(dy)) {
+          this.pendingDir = dx > 0 ? 'right' : 'left';
+        } else {
+          this.pendingDir = dy > 0 ? 'down' : 'up';
+        }
+      });
       // Tap-on-canvas as start/restart convenience.
-      canvas.addEventListener('touchstart', (ev) => { unlock(); Game.tryStart(); }, { passive: true });
-      canvas.addEventListener('mousedown',  () => { unlock(); Game.tryStart(); });
+      canvas.addEventListener('click',  () => { unlock(); Game.tryStart(); });
+      // Don't fire tap-start from touch — it's used for swipe gestures.
+      // The dpad buttons already handle their own touchstart.
     },
   };
 

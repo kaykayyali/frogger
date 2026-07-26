@@ -221,3 +221,26 @@ right edge now reliably kills.
   simpler and reads fine.
 - Rotating the frog to face the riding direction — would look weird
   when the frog is just standing on a moving log. Kept facing static.
+
+## Iteration 9 — 2026-07-26 — Swipe gestures on canvas
+
+**What:** Added touchstart/touchmove/touchend handlers on the canvas to
+detect swipe gestures. Threshold: ≥16 px travel in <600 ms; direction
+is locked to the dominant axis (whichever has more travel). Mapped to
+the same `pendingDir` slot as the dpad buttons, so the rest of the
+input pipeline is untouched.
+
+**Why:** The on-screen dpad is fine for players who know it's there,
+but casual mobile players expect to swipe the play area to move the
+character. Now they can.
+
+**Measured:** Smoke test still passes. Swipe direction locks onto the
+axis with more travel — a diagonal swipe won't accidentally chain two
+directions.
+
+**Rejected:**
+- Hold-to-aim (e.g. swipe distance = hop count) — would change the
+  core mechanic. Keeping one-tile hops.
+- Tap-on-canvas-as-restart — the touchstart handler is now used for
+  swipe capture, and a single tap is indistinguishable from a swipe
+  start. Players use Space or R or the dpad on touch devices.
