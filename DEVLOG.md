@@ -269,3 +269,21 @@ on a number, no timer objects to clean up.
   traffic stops moving. Locking input only.
 - Different fly animation patterns per bonus type — just one fly, with
   one buzz pattern, keeps it readable.
+
+## Iteration 11 — 2026-07-26 — Best level + Shift+R clears high score
+
+**What:** Tracked `bestLevel` alongside `highScore`. Display on the
+GAME OVER panel. Added Shift+R as the gesture to wipe both the
+in-memory and localStorage high score.
+
+**Why:** Players who climb past level 5 want a sense of how far they
+got. And every arcade game has the "I want a fresh start" gesture —
+using Shift instead of plain R avoids stomping a normal restart.
+
+**Measured:** Smoke test still passes.
+
+**Rejected:**
+- Auto-wipe on first load — players would lose their high score to a
+  browser cache clear; explicit Shift+R is intentional.
+- Showing best level on the HUD — would crowd the existing columns;
+  only shown on game over where there's room.

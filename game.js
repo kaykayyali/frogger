@@ -108,6 +108,12 @@
         if (k === 'r' || k === 'R') { Game.restart(); unlock(); e.preventDefault(); }
         if (k === 'm' || k === 'M') { Sfx.setEnabled(!Sfx.enabled); }
         if (k === 'p' || k === 'P') { Game.togglePause(); unlock(); e.preventDefault(); }
+        if ((k === 'r' || k === 'R') && e.shiftKey) {
+          State.highScore = 0;
+          State.bestLevel = 1;
+          try { localStorage.removeItem('frogger.high'); } catch (e) {}
+          e.preventDefault();
+        }
       };
       global.addEventListener('keydown', onKey, { passive: false });
       // Touch buttons
@@ -159,6 +165,7 @@
     homeFilled: [false, false, false, false, false],  // 5 slots
     homeBonus:  [null, null, null, null, null],     // 'frog'|'fly'|null per slot
     floaters:  [],       // floating score texts
+    bestLevel: 1,        // highest level reached this session
     lastTimestamp: 0,
     rafId: null,
     particles: [],      // active particle effects
@@ -412,6 +419,7 @@
       } else if (State.phase === 'roundwin') {
         // Advance to next round (handled in loop after fanfare)
         State.level += 1;
+        if (State.level > State.bestLevel) State.bestLevel = State.level;
         State.timerMax = Math.max(20, TIMER_START - (State.level - 1) * 3);
         State.timer = State.timerMax;
         State.homeFilled = [false, false, false, false, false];
@@ -993,9 +1001,11 @@
       } else if (State.phase === 'gameover') {
         this.drawPanel('GAME OVER', [
           'SCORE ' + State.score,
-          State.highScore > 0 ? 'BEST ' + State.highScore : '',
+          State.highScore > 0 ? 'BEST ' + State.highScore : 'BEST 0',
+          'LV ' + State.bestLevel,
           '',
           'SPACE TO RETRY',
+          'SHIFT+R CLEARS BEST',
         ]);
       } else if (State.phase === 'roundwin') {
         this.drawPanel('LEVEL ' + State.level + ' CLEAR', [
