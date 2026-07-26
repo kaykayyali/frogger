@@ -128,3 +128,25 @@ with traffic but gaps remain jumpable.
   like a real arcade difficulty curve.
 - Adding extra hazards at high levels — would require new art + new
   collision logic. Speed/gap scaling is enough juice for one iteration.
+
+## Iteration 5 — 2026-07-26 — Lily-pad bonuses + floating score text
+
+**What:** Each lily-pad slot now has a chance to spawn a bonus item — a
+small green frog (200 pts) or a purple fly (200 pts) sitting on the
+lily pad. Rolling chances scale from 25% at level 1 to 60% at level 8.
+Landing on a bonus pad awards the points, plays the bonus SFX, emits
+sparkles with a gold flash, and floats the "+200" text upward from the
+slot.
+
+**Why:** Bonuses are a classic Frogger feature and they give the player
+a meaningful reason to choose which home slot to commit to — they
+might plan around catching the fly rather than the nearest open pad.
+
+**Measured:** Smoke test passes. The floatScore helper goes through the
+same Particles system so it inherits the timing + cleanup behavior.
+
+**Rejected:**
+- Snake bonus — classic Frogger has one but a side-scrolling snake
+  doesn't fit the grid-based movement. Skipped.
+- Different point values for frog vs fly — both give the same 200 in
+  the original. Keeping it consistent.

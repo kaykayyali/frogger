@@ -73,6 +73,18 @@
 
   // Home slot columns — 5 evenly spaced, leaving wall columns on edges.
   const HOME_COLS = [1, 3, 5, 7, 9];
+
+  // Bonus items: appear randomly on a lily-pad. Frog = 200 points,
+  // Fly = 200 points (classic Frogger). We model them per-slot.
+  const BONUS_TYPES = { frog: 200, fly: 200, none: 0 };
+  function rollBonus(level) {
+    // 25% chance per slot to carry a bonus; scales with level.
+    const chance = Math.min(0.6, 0.25 + level * 0.05);
+    if (Math.random() < chance) {
+      return Math.random() < 0.5 ? 'frog' : 'fly';
+    }
+    return null;
+  }
   const FROG_START = { row: 12, col: 5 };  // bottom-center-ish
   const MAX_LIVES = 5;
   const TIMER_START = 60;   // seconds per run
@@ -120,6 +132,8 @@
     timer: TIMER_START,
     timerMax: TIMER_START,
     homeFilled: [false, false, false, false, false],  // 5 slots
+    homeBonus:  [null, null, null, null, null],     // 'frog'|'fly'|null per slot
+    floaters:  [],       // floating score texts
     lastTimestamp: 0,
     rafId: null,
     particles: [],      // active particle effects
@@ -188,6 +202,9 @@
     flash(color, alpha) {
       State.flashes.push({ color: color || '#fff', alpha: alpha || 0.5, age: 0, life: 0.25 });
     },
+    floatScore(x, y, text, color) {
+      State.floaters.push({ x, y, text, color: color || '#fff', age: 0, life: 1.2 });
+    },
     update(dt) {
       // Update particles
       for (let i = State.particles.length - 1; i >= 0; i--) {
@@ -204,6 +221,13 @@
         f.age += dt;
         if (f.age >= f.life) State.flashes.splice(i, 1);
       }
+      // Update floaters
+      for (let i = State.floaters.length - 1; i >= 0; i--) {
+        const f = State.floaters[i];
+        f.age += dt;
+        if (f.age >= f.life) State.floaters.splice(i, 1);
+        else f.y -= 24 * dt;
+      }
     },
     draw(ctx) {
       // Particles
@@ -214,11 +238,22 @@
         ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
       }
       ctx.globalAlpha = 1;
-      // Flashes
-      for (const f of State.flashes) {
+      // Floaters
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = 'bold 14px monospace';
+      for (const f of State.floaters) {
         const t = 1 - f.age / f.life;
+        ctx.globalAlpha = t;
         ctx.fillStyle = f.color;
-        ctx.globalAlpha = t * f.alpha;
+        ctx.fillText(f.text, f.x, f.y);
+      }
+      ctx.globalAlpha = 1;
+      // Flashes
+      for (const fl of State.flashes) {
+        const t = 1 - fl.age / fl.life;
+        ctx.fillStyle = fl.color;
+        ctx.globalAlpha = t * fl.alpha;
         ctx.fillRect(0, 0, W, H);
         ctx.globalAlpha = 1;
       }
@@ -226,6 +261,7 @@
     clear() {
       State.particles.length = 0;
       State.flashes.length = 0;
+      State.floaters.length = 0;
     },
   };
 
@@ -305,6 +341,7 @@
       State.timer = TIMER_START;
       State.timerMax = TIMER_START;
       State.homeFilled = [false, false, false, false, false];
+      State.homeBonus = [null, null, null, null, null];
       applyDifficulty(1);
       this.platforms = spawnPlatforms();
       Frog.reset();
@@ -323,6 +360,7 @@
       State.timer = TIMER_START;
       State.timerMax = TIMER_START;
       State.homeFilled = [false, false, false, false, false];
+      State.homeBonus = [null, null, null, null, null];
       State.phase = 'title';
       Particles.clear();
       applyDifficulty(1);
@@ -331,6 +369,12 @@
       // Re-prime loop. start() is safe to call here — it kicks a new RAF
       // chain even if one was running.
       this.loop(State.lastTimestamp);
+    },
+
+    rollHomeBonuses() {
+      for (let i = 0; i < State.homeBonus.length; i++) {
+        State.homeBonus[i] = rollBonus(State.level);
+      }
     },
 
     tryStart() {
@@ -342,7 +386,9 @@
         State.timerMax = Math.max(20, TIMER_START - (State.level - 1) * 3);
         State.timer = State.timerMax;
         State.homeFilled = [false, false, false, false, false];
+        State.homeBonus = [null, null, null, null, null];
         applyDifficulty(State.level);
+        this.rollHomeBonuses();
         this.platforms = spawnPlatforms();
         Frog.reset();
         State.phase = 'play';
@@ -374,7 +420,13 @@
         const idx = HOME_COLS.indexOf(nc);
         if (idx >= 0 && !State.homeFilled[idx]) {
           State.homeFilled[idx] = true;
-          State.score += 50 + State.timer * TIME_BONUS;
+          let bonus = 0;
+          if (State.homeBonus[idx]) {
+            bonus = BONUS_TYPES[State.homeBonus[idx]] || 0;
+            State.homeBonus[idx] = null;
+            Sfx.bonus();
+          }
+          State.score += 50 + bonus + Math.floor(State.timer) * TIME_BONUS;
           Sfx.home();
           // Frog is now safely parked in this slot.
           Frog.row = 1;
@@ -383,7 +435,11 @@
           Frog.riding = null;
           // Sparkle at the slot position.
           Particles.emitSparkles(COL(nc) + TILE_W / 2, ROW(1) + TILE / 2);
-          Particles.flash('#39d353', 0.18);
+          Particles.flash(bonus > 0 ? '#ffea00' : '#39d353', bonus > 0 ? 0.3 : 0.18);
+          // Show the bonus points briefly above the slot.
+          if (bonus > 0) {
+            this.floatScore(COL(nc) + TILE_W / 2, ROW(1) - 6, '+' + bonus, '#ffea00');
+          }
           // Check level completion
           if (State.homeFilled.every(Boolean)) {
             State.score += LEVEL_BONUS;
@@ -671,6 +727,27 @@
           ctx.beginPath();
           ctx.ellipse(x + TILE_W / 2, y + TILE / 2, TILE_W / 3, TILE / 3, 0, 0, Math.PI * 2);
           ctx.fill();
+          // Bonus item on top of the lily pad: frog or fly.
+          if (State.homeBonus[i] === 'frog') {
+            ctx.fillStyle = '#39d353';
+            ctx.beginPath();
+            ctx.ellipse(x + TILE_W / 2, y + TILE / 2, TILE_W / 4, TILE / 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(x + TILE_W / 2 - 2.5, y + TILE / 2 - 2, 1.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x + TILE_W / 2 + 2.5, y + TILE / 2 - 2, 1.5, 0, Math.PI * 2); ctx.fill();
+          } else if (State.homeBonus[i] === 'fly') {
+            // Tiny purple fly: body + wings.
+            ctx.fillStyle = '#cc66ff';
+            ctx.fillRect(x + TILE_W / 2 - 4, y + TILE / 2 - 1, 8, 3);
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.beginPath();
+            ctx.ellipse(x + TILE_W / 2 - 3, y + TILE / 2 - 3, 3, 2, -0.4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x + TILE_W / 2 + 3, y + TILE / 2 - 3, 3, 2, 0.4, 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
         ctx.fillRect(x, y, TILE_W, TILE);
         // Outline
