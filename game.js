@@ -199,6 +199,7 @@
     homeBonus:  [null, null, null, null, null],     // 'frog'|'fly'|null per slot
     deathsThisRound: 0,  // number of frog deaths during this round
     countdownT: 0,       // ready-countdown remaining (sec); blocks input
+    timeScale: 1,        // global simulation time scale (1 = normal, <1 = slow-mo)
     floaters:  [],       // floating score texts
     bestLevel: 1,        // highest level reached this session
     levelCardT: 0,       // level-title card remaining time (sec)
@@ -474,6 +475,7 @@
       State.flyNext = 0;
       State.justBeatBest = false;
       State.countdownT = 0;
+      State.timeScale = 1;
       applyDifficulty(1);
       // Reset lastTimestamp so the first frame after restart isn't a giant dt.
       State.lastTimestamp = performance.now();
@@ -561,6 +563,8 @@
           Frog.col = nc;
           Frog.x = 0; Frog.y = 0;
           Frog.riding = null;
+          // Brief slow-mo so the sparkles + ripple read.
+          State.timeScale = 0.35;
           // Sparkle + ripple at the slot position.
           Particles.emitSparkles(COL(nc) + TILE_W / 2, ROW(1) + TILE / 2);
           Particles.emitRipples(COL(nc) + TILE_W / 2, ROW(1) + TILE / 2,
@@ -798,8 +802,14 @@
       // Skip simulation while paused but keep rendering so the overlay
       // shows a frozen field.
       if (State.phase !== 'paused') {
-        this.update(dt);
-        Particles.update(dt);
+        // Apply global time scale (slow-mo on home fill).
+        const scaledDt = dt * State.timeScale;
+        this.update(scaledDt);
+        Particles.update(scaledDt);
+      }
+      // Ease the time scale back toward 1 every frame.
+      if (State.timeScale < 1) {
+        State.timeScale = Math.min(1, State.timeScale + dt * 2);
       }
       Render.frame();
       State.rafId = requestAnimationFrame((t) => this.loop(t));

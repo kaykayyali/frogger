@@ -623,3 +623,24 @@ current best until they start a run.
 - Putting "BEST N" as the top line of the panel — would compete with
   the FROGGER title.
 - Showing the best level on the title screen too — would crowd.
+
+## Iteration 24 — 2026-07-26 — Brief slow-mo on home slot fill
+
+**What:** Added `State.timeScale`. When the frog lands on a home slot,
+it drops to 0.35 and eases back to 1.0 over ~0.5 s. Affects platform
+movement, particle updates, and the hop animation timer, but NOT
+input (so the player can immediately hop again after the lock).
+
+**Why:** Sparkles + ripple + flash are visual events that compete
+with a road full of moving cars. Slowing the world briefly lets the
+celebration read.
+
+**Measured:** Smoke passes. The ease is `+dt * 2` per frame so at
+60 fps it returns to 1.0 in about 30 frames (~0.5 s).
+
+**Rejected:**
+- Slow-mo for every forward hop — would make the game feel sluggish.
+- Time scale affecting the hop animation — already timing-driven and
+  would feel out of sync. Skipped by not scaling the hop duration
+  itself (only the simulation).
+- Stopping the world entirely — same UX problem as pausing.
