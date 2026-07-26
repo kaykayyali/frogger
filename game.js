@@ -990,14 +990,17 @@
     drawOverlays() {
       const ctx = this.ctx;
       if (State.phase === 'title') {
+        // Animated demo frog hops back and forth above the panel —
+        // pure eye candy so the title screen feels alive.
+        this.drawTitleDemoFrog();
         this.drawPanel('FROGGER', [
           'ARROWS / WASD TO MOVE',
           'SPACE TO START',
           'R RESTARTS  •  M MUTES',
-          'P PAUSES',
+          'P PAUSES  •  SHIFT+R CLEARS',
           '',
           'REACH THE LILY-PADS',
-        ]);
+        ], 240);
       } else if (State.phase === 'gameover') {
         this.drawPanel('GAME OVER', [
           'SCORE ' + State.score,
@@ -1026,11 +1029,12 @@
         ctx.fillText('PRESS P TO RESUME', W / 2, H / 2 + 20);
       }
     },
-    drawPanel(title, lines) {
+    drawPanel(title, lines, ph) {
+      ph = ph || 220;
       const ctx = this.ctx;
       ctx.fillStyle = 'rgba(0,0,0,0.55)';
       ctx.fillRect(0, 0, W, H);
-      const px = 50, py = 200, pw = W - 100, ph = 220;
+      const px = 50, py = 200, pw = W - 100;
       ctx.fillStyle = '#0a1a0a';
       ctx.fillRect(px, py, pw, ph);
       ctx.strokeStyle = '#39d353';
@@ -1057,9 +1061,50 @@
         ctx.fillText('— PRESS SPACE —', W / 2, py + ph - 22);
       }
     },
+    drawTitleDemoFrog() {
+      const ctx = this.ctx;
+      const t = performance.now() / 1000;
+      // Back-and-forth sine: position oscillates within the title band
+      // above the panel.
+      const x = 80 + (Math.sin(t * 1.6) * 0.5 + 0.5) * (W - 160);
+      const y = 130 + Math.abs(Math.sin(t * 3.2)) * -14;
+      const facing = (Math.cos(t * 1.6) > 0) ? 'right' : 'left';
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + TILE / 2 - 6, 12, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Body
+      ctx.save();
+      ctx.translate(x, y);
+      const rot = facing === 'left' ? Math.PI : 0;
+      ctx.rotate(rot);
+      ctx.fillStyle = '#1f8a36';
+      ctx.beginPath();
+      ctx.ellipse(-TILE_W / 3, TILE / 4 - 2, 4, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse( TILE_W / 3, TILE / 4 - 2, 4, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#39d353';
+      ctx.beginPath();
+      ctx.ellipse(0, 2, TILE_W / 2 - 5, TILE / 2 - 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#7ad47a';
+      ctx.beginPath();
+      ctx.ellipse(0, 5, TILE_W / 2 - 8, TILE / 2 - 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(-5, -7, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc( 5, -7, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.beginPath(); ctx.arc(-5, -7, 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc( 5, -7, 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    },
   };
 
-  // ---------- Boot ----------
+// ---------- Boot ----------
   function boot() {
     const canvas = document.getElementById('game');
     canvas.width = W;

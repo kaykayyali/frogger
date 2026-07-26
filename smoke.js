@@ -79,6 +79,13 @@ async function main() {
   await page.keyboard.press('p');
   await page.waitForTimeout(100);
   const resumed = await page.evaluate(() => globalThis.State.phase);
+  // Capture title screen for visual review.
+  await page.keyboard.press('r');
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: path.join(ROOT, 'smoke-title.png') });
+  // Then play snapshot.
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(400);
   await page.screenshot({ path: path.join(ROOT, 'smoke.png') });
   await browser.close();
   server.close();

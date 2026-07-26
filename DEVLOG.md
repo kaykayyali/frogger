@@ -287,3 +287,26 @@ using Shift instead of plain R avoids stomping a normal restart.
   browser cache clear; explicit Shift+R is intentional.
 - Showing best level on the HUD — would crowd the existing columns;
   only shown on game over where there's room.
+
+## Iteration 12 — 2026-07-26 — Title screen demo frog
+
+**What:** Added `drawTitleDemoFrog` that paints a small hopping frog
+across the title-screen band above the panel. Uses a sine on x for
+back-and-forth motion, a faster sine on y for vertical bob, and
+flips facing when the motion reverses. Also extended `drawPanel` to
+accept an optional height so the title panel can be a touch taller
+without the prompt overlapping the body text.
+
+**Why:** Title screens with motion feel more inviting than a static
+panel. The frog demo also doubles as a low-key preview of the controls
+that are about to be used.
+
+**Measured:** Smoke passes. Title screenshot shows the demo frog
+hopping in the river band, panel with all five control lines and a
+non-overlapping blink prompt.
+
+**Rejected:**
+- Animating the river/logs in the title — they're already moving in
+  the underlying canvas, doubling motion would be busy.
+- Big hero frog illustration — would push the game-feel toward
+  illustrated rather than arcade.
