@@ -98,6 +98,111 @@
     homeFilled: [false, false, false, false, false],  // 5 slots
     lastTimestamp: 0,
     rafId: null,
+    particles: [],      // active particle effects
+    flashes: [],        // short screen-tint flashes (e.g. on level complete)
+  };
+
+  // ---------- Particles ----------
+  // Tiny particle system for juice: death splashes, home success sparkles,
+  // bonus pickup confetti. Each particle has position, velocity, life,
+  // color, and size. Heavy on readability, light on math.
+  const Particles = {
+    emitSplash(cx, cy, color) {
+      const N = 14;
+      for (let i = 0; i < N; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const sp = 60 + Math.random() * 140;
+        State.particles.push({
+          x: cx, y: cy,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp - 80,    // bias upward
+          g: 280,                       // gravity
+          life: 0.5 + Math.random() * 0.4,
+          age: 0,
+          color: color || '#7ad7ff',
+          size: 2 + Math.random() * 3,
+        });
+      }
+    },
+    emitSparkles(cx, cy) {
+      const palette = ['#ffea00', '#39d353', '#7ad7ff', '#ffffff'];
+      const N = 22;
+      for (let i = 0; i < N; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const sp = 80 + Math.random() * 180;
+        State.particles.push({
+          x: cx, y: cy,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp - 60,
+          g: 200,
+          life: 0.6 + Math.random() * 0.6,
+          age: 0,
+          color: palette[i % palette.length],
+          size: 3 + Math.random() * 3,
+        });
+      }
+    },
+    emitConfetti(cx, cy) {
+      const palette = ['#ff3a3a', '#39d353', '#ffea00', '#7ad7ff', '#ffffff', '#ff7ad9'];
+      const N = 50;
+      for (let i = 0; i < N; i++) {
+        const a = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.8;
+        const sp = 180 + Math.random() * 240;
+        State.particles.push({
+          x: cx + (Math.random() - 0.5) * 60,
+          y: cy,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp,
+          g: 240,
+          life: 1.2 + Math.random() * 0.8,
+          age: 0,
+          color: palette[i % palette.length],
+          size: 3 + Math.random() * 3,
+        });
+      }
+    },
+    flash(color, alpha) {
+      State.flashes.push({ color: color || '#fff', alpha: alpha || 0.5, age: 0, life: 0.25 });
+    },
+    update(dt) {
+      // Update particles
+      for (let i = State.particles.length - 1; i >= 0; i--) {
+        const p = State.particles[i];
+        p.age += dt;
+        if (p.age >= p.life) { State.particles.splice(i, 1); continue; }
+        p.vy += p.g * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+      }
+      // Update flashes
+      for (let i = State.flashes.length - 1; i >= 0; i--) {
+        const f = State.flashes[i];
+        f.age += dt;
+        if (f.age >= f.life) State.flashes.splice(i, 1);
+      }
+    },
+    draw(ctx) {
+      // Particles
+      for (const p of State.particles) {
+        const t = 1 - p.age / p.life;
+        ctx.globalAlpha = Math.max(0, t);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+      }
+      ctx.globalAlpha = 1;
+      // Flashes
+      for (const f of State.flashes) {
+        const t = 1 - f.age / f.life;
+        ctx.fillStyle = f.color;
+        ctx.globalAlpha = t * f.alpha;
+        ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = 1;
+      }
+    },
+    clear() {
+      State.particles.length = 0;
+      State.flashes.length = 0;
+    },
   };
 
   // ---------- Helpers ----------
@@ -194,6 +299,7 @@
       State.timerMax = TIMER_START;
       State.homeFilled = [false, false, false, false, false];
       State.phase = 'title';
+      Particles.clear();
       // Reset lastTimestamp so the first frame after restart isn't a giant dt.
       State.lastTimestamp = performance.now();
       // Re-prime loop. start() is safe to call here — it kicks a new RAF
@@ -248,10 +354,15 @@
           Frog.col = nc;
           Frog.x = 0; Frog.y = 0;
           Frog.riding = null;
+          // Sparkle at the slot position.
+          Particles.emitSparkles(COL(nc) + TILE_W / 2, ROW(1) + TILE / 2);
+          Particles.flash('#39d353', 0.18);
           // Check level completion
           if (State.homeFilled.every(Boolean)) {
             State.score += LEVEL_BONUS;
             State.phase = 'roundwin';
+            Particles.emitConfetti(W / 2, ROW(1) + TILE / 2);
+            Particles.flash('#ffffff', 0.35);
             Sfx.win();
           }
         } else {
@@ -265,9 +376,19 @@
     killFrog(reason) {
       if (State.phase !== 'play') return;
       State.phase = 'dying';
+      // Death FX at the frog's position.
+      const fx = COL(Frog.col) + Frog.x + TILE_W / 2;
+      const fy = ROW(Frog.row) + Frog.y + TILE / 2;
       if (reason === 'drown' || reason === 'wrongslot' || reason === 'offscreen') {
+        Particles.emitSplash(fx, fy, '#7ad7ff');
+        Particles.flash('#0c2a55', 0.35);
+        Sfx.drown();
+      } else if (reason === 'timeout') {
+        Particles.emitSplash(fx, fy, '#ffea00');
         Sfx.drown();
       } else {
+        Particles.emitSplash(fx, fy, '#ff3a3a');
+        Particles.flash('#ff3a3a', 0.25);
         Sfx.hit();
       }
       // Wait a beat then respawn or game over.
@@ -396,6 +517,7 @@
         this.moveFrog(d);
       }
       this.update(dt);
+      Particles.update(dt);
       Render.frame();
       State.rafId = requestAnimationFrame((t) => this.loop(t));
     },
@@ -416,6 +538,7 @@
       this.drawHud();
       this.drawField();
       this.drawFrog();
+      Particles.draw(ctx);
       this.drawOverlays();
     },
     drawHud() {

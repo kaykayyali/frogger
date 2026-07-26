@@ -60,3 +60,25 @@ legible. Lives icons sit in the corner without overlapping the time.
   see the field while reading.
 - Different fonts — system monospace is consistent enough and avoids
   asset loading.
+
+## Iteration 2 — 2026-07-26 — Juice: particle effects + flashes
+
+**What:** Added a small `Particles` system: water splash on drown,
+sparkles on home fill, confetti on level complete, brief colored screen
+flash on death and level win. Drawn on top of the frog so they read
+clearly.
+
+**Why:** Even when the game logic is right, the v1 felt inert — the only
+feedback for dying or winning was a sound and an instantaneous state
+change. Particles give the player something to look at during the
+~600ms death respawn delay and the round-win panel transition.
+
+**Measured:** Smoke test still passes. The splash color is keyed to the
+death cause (blue for water, red for car, yellow for timeout) so players
+can tell at a glance why they died even before reading the panel.
+
+**Rejected:**
+- Sprite-based particles — pure rect particles render fast enough and
+  keep with the retro aesthetic.
+- Long-lived embers / screen shake — the canvas size is fixed at 480×640
+  and shake would push the field out of view. Particles only.
