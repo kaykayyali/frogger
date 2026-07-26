@@ -409,3 +409,25 @@ OVER".
 - Storing best level persistently — best score is the meaningful
   long-term stat. Best level resets per session so players feel
   their next-run progress is fresh.
+
+## Iteration 17 — 2026-07-26 — Perfect-round bonus
+
+**What:** Track `deathsThisRound`. When the player completes all 5
+home slots without any frog dying during the round, award an extra
++500 with a floating "+500 PERFECT" text above the home row.
+
+**Why:** Most Frogger players will die at least once per round —
+perfect runs are skill statements. The 500-point reward is large
+enough to feel meaningful but small enough not to break the score
+economy (a regular round is ~600 base).
+
+**Measured:** Smoke test passes. The deaths counter resets on
+restart and on round transition, so it always reflects the current
+round.
+
+**Rejected:**
+- Visible death counter on the HUD — would crowd the existing
+  columns; the bonus at round end is enough.
+- Higher bonus for higher levels — already implicit: faster traffic
+  + shorter timer makes the perfect harder to earn, so the value
+  naturally scales.

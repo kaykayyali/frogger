@@ -179,6 +179,7 @@
     timerMax: TIMER_START,
     homeFilled: [false, false, false, false, false],  // 5 slots
     homeBonus:  [null, null, null, null, null],     // 'frog'|'fly'|null per slot
+    deathsThisRound: 0,  // number of frog deaths during this round
     floaters:  [],       // floating score texts
     bestLevel: 1,        // highest level reached this session
     levelCardT: 0,       // level-title card remaining time (sec)
@@ -393,6 +394,7 @@
       State.timerMax = TIMER_START;
       State.homeFilled = [false, false, false, false, false];
       State.homeBonus = [null, null, null, null, null];
+      State.deathsThisRound = 0;
       applyDifficulty(1);
       this.platforms = spawnPlatforms();
       Frog.reset();
@@ -416,6 +418,7 @@
       State.timerMax = TIMER_START;
       State.homeFilled = [false, false, false, false, false];
       State.homeBonus = [null, null, null, null, null];
+      State.deathsThisRound = 0;
       State.phase = 'title';
       Particles.clear();
       State.levelCardT = 0;
@@ -447,6 +450,7 @@
         State.timer = State.timerMax;
         State.homeFilled = [false, false, false, false, false];
         State.homeBonus = [null, null, null, null, null];
+        State.deathsThisRound = 0;
         applyDifficulty(State.level);
         this.rollHomeBonuses();
         this.platforms = spawnPlatforms();
@@ -516,6 +520,11 @@
           // Check level completion
           if (State.homeFilled.every(Boolean)) {
             State.score += LEVEL_BONUS;
+            // Perfect round bonus — 500 extra if no deaths this round.
+            if (State.deathsThisRound === 0) {
+              State.score += 500;
+              Particles.floatScore(W / 2, ROW(2), '+500 PERFECT', '#ffea00');
+            }
             State.phase = 'roundwin';
             Particles.emitConfetti(W / 2, ROW(1) + TILE / 2);
             Particles.flash('#ffffff', 0.35);
@@ -558,6 +567,7 @@
         this._dyingTimer = null;
         if (State.phase !== 'dying') return;       // restart happened
         State.lives -= 1;
+        State.deathsThisRound += 1;
         if (State.lives <= 0) {
           State.phase = 'gameover';
           const isNewBest = State.score > State.highScore;
