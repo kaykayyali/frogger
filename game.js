@@ -765,14 +765,22 @@
       const y = ROW(p.row);
       // Skip if outside
       if (p.x + p.len < -8 || p.x > W + 8) return;
+      const t = performance.now() / 1000;
       if (p.type === 'log') {
+        // Slight vertical bob from the river current.
+        const bob = Math.sin(t * 2 + p.x * 0.02) * 1;
         ctx.fillStyle = '#8b5a2b';
-        ctx.fillRect(p.x, y + 4, p.len, TILE - 8);
+        ctx.fillRect(p.x, y + 4 + bob, p.len, TILE - 8);
         ctx.fillStyle = '#a0703a';
-        ctx.fillRect(p.x, y + 4, p.len, 4);
+        ctx.fillRect(p.x, y + 4 + bob, p.len, 4);
         ctx.fillStyle = '#5a3a1b';
         // Plank lines
-        for (let i = 0; i < p.len; i += 12) ctx.fillRect(p.x + i, y + 4, 1, TILE - 8);
+        for (let i = 0; i < p.len; i += 12) ctx.fillRect(p.x + i, y + 4 + bob, 1, TILE - 8);
+        // Knots
+        ctx.fillStyle = '#3b2310';
+        for (let i = 8; i < p.len; i += 28) {
+          ctx.beginPath(); ctx.arc(p.x + i, y + TILE / 2 + bob, 2, 0, Math.PI * 2); ctx.fill();
+        }
       } else if (p.type === 'turtle') {
         if (p.diving) {
           ctx.fillStyle = 'rgba(20,40,80,0.9)';
@@ -781,36 +789,66 @@
         }
         ctx.fillStyle = '#2a8a55';
         const headR = TILE / 3;
+        // Slow leg-flutter animation: lift each head alternately.
         for (let i = 0; i < p.len; i += headR * 1.4) {
+          const phase = Math.sin(t * 3 + i * 0.3) * 1.5;
           ctx.beginPath();
-          ctx.ellipse(p.x + i + headR, y + TILE / 2, headR, TILE / 2 - 2, 0, 0, Math.PI * 2);
+          ctx.ellipse(p.x + i + headR, y + TILE / 2 + phase, headR, TILE / 2 - 2, 0, 0, Math.PI * 2);
           ctx.fill();
+        }
+        // Eyes
+        ctx.fillStyle = '#fff';
+        for (let i = 0; i < p.len; i += headR * 1.4) {
+          ctx.beginPath(); ctx.arc(p.x + i + headR - 2.5, y + TILE / 2 - 2, 1.4, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(p.x + i + headR + 2.5, y + TILE / 2 - 2, 1.4, 0, Math.PI * 2); ctx.fill();
         }
         ctx.fillStyle = '#000';
         for (let i = 0; i < p.len; i += headR * 1.4) {
-          ctx.fillRect(p.x + i + headR - 2, y + TILE / 2 - 2, 4, 4);
+          ctx.fillRect(p.x + i + headR - 3, y + TILE / 2 - 2.5, 1, 1);
+          ctx.fillRect(p.x + i + headR + 2, y + TILE / 2 - 2.5, 1, 1);
         }
       } else if (p.type === 'car') {
         ctx.fillStyle = '#d23';
         ctx.fillRect(p.x + 4, y + 6, p.len - 8, TILE - 12);
         ctx.fillStyle = '#ff7';
         ctx.fillRect(p.x + 8, y + 10, p.len - 16, 8);
-        // Wheels
+        // Headlights / taillights
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(p.x + p.len - 6, y + 10, 2, 4);
+        ctx.fillStyle = '#f80';
+        ctx.fillRect(p.x + 4, y + 10, 2, 4);
+        // Wheels — spin offset based on time and speed so cars appear to roll.
+        const wheelSpin = (t * Math.abs(p.speed) * 0.04) % 1;
         ctx.fillStyle = '#000';
-        ctx.fillRect(p.x + 6, y + TILE - 8, 8, 6);
-        ctx.fillRect(p.x + p.len - 14, y + TILE - 8, 8, 6);
-        ctx.fillRect(p.x + 6, y + 2, 8, 6);
-        ctx.fillRect(p.x + p.len - 14, y + 2, 8, 6);
+        const wheelPositions = [p.x + 6, p.x + p.len - 14];
+        for (const wx of wheelPositions) {
+          ctx.fillRect(wx, y + TILE - 8, 8, 6);
+          ctx.fillRect(wx, y + 2, 8, 6);
+          // Spoke marker to make rotation visible.
+          ctx.fillStyle = '#777';
+          ctx.fillRect(wx + 4 - 1, y + TILE - 5, 2, 1 + Math.abs(Math.sin(wheelSpin * Math.PI * 2)));
+          ctx.fillRect(wx + 4 - 1, y + 5, 2, 1 + Math.abs(Math.cos(wheelSpin * Math.PI * 2)));
+          ctx.fillStyle = '#000';
+        }
       } else if (p.type === 'truck') {
         ctx.fillStyle = '#39d';
         ctx.fillRect(p.x + 4, y + 4, p.len - 8, TILE - 8);
         ctx.fillStyle = '#cef';
         ctx.fillRect(p.x + p.len - 28, y + 8, 18, TILE - 16);
+        // Tail-light
+        ctx.fillStyle = '#f80';
+        ctx.fillRect(p.x + 4, y + 10, 2, 4);
         ctx.fillStyle = '#000';
-        ctx.fillRect(p.x + 8, y + TILE - 8, 8, 6);
-        ctx.fillRect(p.x + p.len - 14, y + TILE - 8, 8, 6);
-        ctx.fillRect(p.x + 8, y + 2, 8, 6);
-        ctx.fillRect(p.x + p.len - 14, y + 2, 8, 6);
+        const wheelSpin = (t * Math.abs(p.speed) * 0.04) % 1;
+        const wheelPositions = [p.x + 8, p.x + p.len - 14];
+        for (const wx of wheelPositions) {
+          ctx.fillRect(wx, y + TILE - 8, 8, 6);
+          ctx.fillRect(wx, y + 2, 8, 6);
+          ctx.fillStyle = '#777';
+          ctx.fillRect(wx + 4 - 1, y + TILE - 5, 2, 1 + Math.abs(Math.sin(wheelSpin * Math.PI * 2)));
+          ctx.fillRect(wx + 4 - 1, y + 5, 2, 1 + Math.abs(Math.cos(wheelSpin * Math.PI * 2)));
+          ctx.fillStyle = '#000';
+        }
       }
     },
     drawFrog() {

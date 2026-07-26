@@ -150,3 +150,24 @@ same Particles system so it inherits the timing + cleanup behavior.
   doesn't fit the grid-based movement. Skipped.
 - Different point values for frog vs fly — both give the same 200 in
   the original. Keeping it consistent.
+
+## Iteration 6 — 2026-07-26 — Animated platforms
+
+**What:** Wheels on cars/trucks rotate (spoke marker keyed off
+`Math.abs(p.speed)` so faster rows spin faster). Logs bob vertically
+with a sine wave keyed off their world-space x so the river looks alive.
+Turtles have eye dots and a per-segment vertical "leg flutter" sine. Cars
+got white headlights + amber taillights. Logs got dark knot circles.
+
+**Why:** Static platforms felt like a still photograph pasted over a
+moving background. With these, the world has constant micro-motion even
+when the frog isn't moving, and the directionality of traffic reads at
+a glance from the wheel spin alone.
+
+**Measured:** Smoke test passes. Frame cost: ~3 extra sine calcs per
+platform per frame, ~12 platforms = trivial.
+
+**Rejected:**
+- Per-pixel sprite wheels — kept rect+spoke marker; readable and free.
+- Skid marks or brake-light flashes — would be cool but doesn't fit the
+  arcade tone.
