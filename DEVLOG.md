@@ -388,3 +388,24 @@ between sightings (12-24 s) so it never feels spammy.
   stays a fair bonus.
 - Showing a "FLY INCOMING!" warning — would break the surprise; the
   wing-flap and visible motion already announce it.
+
+## Iteration 16 — 2026-07-26 — "NEW BEST!" indicator on game over
+
+**What:** Track `justBeatBest` and replace the GAME OVER title with
+"NEW BEST!" when the run beats the persisted high score. Also add a
+"NEW BEST!" line in the body for emphasis.
+
+**Why:** Players who reach a new high score were getting the same flat
+GAME OVER panel as a 0-point run. A celebration title makes the
+achievement land.
+
+**Measured:** Smoke test passes. The flag resets on restart so a
+follow-up run that doesn't beat the high score still shows "GAME
+OVER".
+
+**Rejected:**
+- Animated "NEW BEST!" particles — would compete with the level card
+  animation. The yellow text alone reads clearly.
+- Storing best level persistently — best score is the meaningful
+  long-term stat. Best level resets per session so players feel
+  their next-run progress is fresh.

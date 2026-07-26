@@ -184,6 +184,7 @@
     levelCardT: 0,       // level-title card remaining time (sec)
     fly: null,           // moving fly bonus across the playfield
     flyNext: 0,          // seconds until next fly spawn
+    justBeatBest: false, // true if last run beat the persisted high score
     lastTimestamp: 0,
     rafId: null,
     particles: [],      // active particle effects
@@ -420,6 +421,7 @@
       State.levelCardT = 0;
       State.fly = null;
       State.flyNext = 0;
+      State.justBeatBest = false;
       applyDifficulty(1);
       // Reset lastTimestamp so the first frame after restart isn't a giant dt.
       State.lastTimestamp = performance.now();
@@ -558,7 +560,9 @@
         State.lives -= 1;
         if (State.lives <= 0) {
           State.phase = 'gameover';
-          if (State.score > State.highScore) State.highScore = State.score;
+          const isNewBest = State.score > State.highScore;
+          if (isNewBest) State.highScore = State.score;
+          State.justBeatBest = isNewBest;
           Sfx.gameOver();
         } else {
           Frog.reset();
@@ -1097,14 +1101,15 @@
           'REACH THE LILY-PADS',
         ], 240);
       } else if (State.phase === 'gameover') {
-        this.drawPanel('GAME OVER', [
-          'SCORE ' + State.score,
-          State.highScore > 0 ? 'BEST ' + State.highScore : 'BEST 0',
-          'LV ' + State.bestLevel,
-          '',
-          'SPACE TO RETRY',
-          'SHIFT+R CLEARS BEST',
-        ]);
+        const lines = [];
+        if (State.justBeatBest) lines.push('NEW BEST!');
+        lines.push('SCORE ' + State.score);
+        if (State.highScore > 0) lines.push('BEST ' + State.highScore);
+        lines.push('LV ' + State.bestLevel);
+        lines.push('');
+        lines.push('SPACE TO RETRY');
+        lines.push('SHIFT+R CLEARS BEST');
+        this.drawPanel(State.justBeatBest ? 'NEW BEST!' : 'GAME OVER', lines);
       } else if (State.phase === 'roundwin') {
         this.drawPanel('LEVEL ' + State.level + ' CLEAR', [
           'BONUS +' + LEVEL_BONUS,
