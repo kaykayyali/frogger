@@ -82,3 +82,23 @@ can tell at a glance why they died even before reading the panel.
   keep with the retro aesthetic.
 - Long-lived embers / screen shake — the canvas size is fixed at 480×640
   and shake would push the field out of view. Particles only.
+
+## Iteration 3 — 2026-07-26 — Better frog + animated water
+
+**What:** Redrew the frog with legs, belly highlight, larger eye domes,
+and a mouth line. Added two layers of sine-wave "ripples" on every river
+row and the home row.
+
+**Why:** The v1 frog was a flat green ellipse. Hard to read at a glance
+especially when the screen was full of motion. The static dark-blue river
+also felt dead next to all the moving cars.
+
+**Measured:** Smoke test passes. Screenshot shows the new frog sprite at
+the start row with visible eyes and legs, and faint cyan dashes rippling
+across the water bands.
+
+**Rejected:**
+- Per-pixel sprite animation — would mean a sprite sheet and atlas code.
+  Pure shapes keep the file under 30 KB and load instantly.
+- Tilting the frog toward facing direction mid-hop — looks weird because
+  the hop is short; kept facing as a static rotation when grounded only.

@@ -600,6 +600,21 @@
         if (cfg.kind === 'home') color = '#0c2a55';
         ctx.fillStyle = color;
         ctx.fillRect(0, y, W, TILE);
+        // Animated water shimmer on river and home rows.
+        if (cfg.kind === 'river' || cfg.kind === 'home') {
+          const t = performance.now() / 1000;
+          ctx.fillStyle = 'rgba(122, 215, 255, 0.18)';
+          // Two layers of sine wave "ripples" — gives water a sense of life
+          // without distracting from gameplay.
+          for (let x = 0; x < W; x += 14) {
+            const yo = Math.sin((x + t * 30) * 0.07) * 3;
+            ctx.fillRect(x, y + TILE / 2 - 2 + yo, 8, 2);
+          }
+          for (let x = 7; x < W; x += 18) {
+            const yo = Math.cos((x - t * 22) * 0.05) * 2;
+            ctx.fillRect(x, y + TILE - 8 + yo, 5, 1);
+          }
+        }
         // Lane stripes
         if (cfg.kind === 'road') {
           ctx.fillStyle = '#fff';
@@ -703,23 +718,51 @@
         fx = Frog.riding.x + Frog.ridingOffset + TILE_W / 2;
         fy = ROW(Frog.row) + TILE / 2;
       }
-      // Hop arc
-      const hopLift = Frog.hopT > 0 ? -Math.sin(Frog.hopT * Math.PI) * 12 : 0;
+      // Hop arc — sine pop with rotation toward facing direction.
+      const hopLift = Frog.hopT > 0 ? -Math.sin(Frog.hopT * Math.PI) * 14 : 0;
       const cx = fx + TILE_W / 2;
       const cy = fy + TILE / 2 + hopLift;
+      const facingRot =
+        Frog.facing === 'left' ? -Math.PI / 2 :
+        Frog.facing === 'right' ? Math.PI / 2 :
+        Frog.facing === 'down' ? Math.PI : 0;
+      ctx.save();
+      ctx.translate(cx, cy);
+      if (Frog.hopT <= 0) ctx.rotate(facingRot);
+      // Legs — two ovals behind the body
+      ctx.fillStyle = '#1f8a36';
+      ctx.beginPath();
+      ctx.ellipse(-TILE_W / 3, TILE / 4 - 2, 4, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse( TILE_W / 3, TILE / 4 - 2, 4, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
       // Body
       ctx.fillStyle = '#39d353';
       ctx.beginPath();
-      ctx.ellipse(cx, cy + 2, TILE_W / 2 - 4, TILE / 2 - 4, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 2, TILE_W / 2 - 5, TILE / 2 - 6, 0, 0, Math.PI * 2);
       ctx.fill();
-      // Eyes (white)
+      // Belly highlight
+      ctx.fillStyle = '#7ad47a';
+      ctx.beginPath();
+      ctx.ellipse(0, 5, TILE_W / 2 - 8, TILE / 2 - 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Eyes — two big white domes on top of head
       ctx.fillStyle = '#fff';
-      const ex = Frog.facing === 'left' ? -2 : Frog.facing === 'right' ? 2 : 0;
-      ctx.beginPath(); ctx.arc(cx - 5 + ex, cy - 4, 3, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(cx + 5 + ex, cy - 4, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(-5, -7, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc( 5, -7, 3.2, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#000';
-      ctx.beginPath(); ctx.arc(cx - 5 + ex, cy - 4, 1.5, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(cx + 5 + ex, cy - 4, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(-5, -7, 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc( 5, -7, 1.6, 0, Math.PI * 2); ctx.fill();
+      // Mouth line (only when facing forward / down)
+      if (Frog.facing !== 'up') {
+        ctx.strokeStyle = '#1a4a1a';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(0, 2, 6, 0.15, Math.PI - 0.15);
+        ctx.stroke();
+      }
+      ctx.restore();
     },
     drawOverlays() {
       const ctx = this.ctx;
