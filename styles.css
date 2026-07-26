@@ -2,6 +2,7 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+  width: 100%;
   background: #000;
   color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -19,27 +20,33 @@ html, body {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+           env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  box-sizing: border-box;
 }
 
 canvas#game {
+  /* Display size is set in JS based on viewport + devicePixelRatio so the
+     backing store stays crisp on HiDPI screens. CSS just confirms the
+     shape and prevents any layout-driven growth. */
   background: #000;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  max-width: 100vw;
-  max-height: calc(100vh - 140px);
-  width: auto;
-  height: auto;
-  aspect-ratio: 480 / 640;
+  display: block;
   box-shadow: 0 0 24px rgba(0,0,0,0.6);
+  /* Aspect ratio enforced so layout doesn't collapse if JS fails. */
+  aspect-ratio: 480 / 640;
 }
 
 #touch-controls {
   display: none;
+  flex-direction: column;
   gap: 6px;
   align-items: center;
   justify-content: center;
   margin-top: 4px;
+  flex-shrink: 0;
 }
 
 .tc-row {
@@ -68,16 +75,18 @@ canvas#game {
   border-color: #888;
 }
 
-/* Hide touch controls on screens wider than 720px (likely desktops with
-   keyboard or tablets with external keyboards). Keeps the canvas alone. */
-@media (min-width: 721px) {
-  #touch-controls { display: none !important; }
-}
-
+/* On coarse pointers (touch-first devices) show the d-pad by default.
+   Hide on wide screens where there's room for keyboard input. */
 @media (hover: none) and (pointer: coarse) {
   #touch-controls { display: flex; }
 }
 
-@media (max-width: 520px) {
-  canvas#game { max-height: calc(100vh - 180px); }
+@media (min-width: 721px) {
+  #touch-controls { display: none !important; }
+}
+
+/* On very short viewports (landscape phones), hide the d-pad so the
+   canvas can use the vertical space — swipe gestures still work. */
+@media (max-height: 480px) and (hover: none) and (pointer: coarse) {
+  #touch-controls { display: none !important; }
 }

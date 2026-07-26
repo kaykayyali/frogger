@@ -161,8 +161,23 @@
           this.pendingDir = dy > 0 ? 'down' : 'up';
         }
       });
-      // Tap-on-canvas as start/restart convenience.
-      canvas.addEventListener('click',  () => { unlock(); Game.tryStart(); });
+      // Tap-on-canvas as start/restart convenience. Click is converted from
+      // CSS px to game coordinates via Layout.clientToGame so it works
+      // regardless of how the canvas was scaled by CSS.
+      canvas.addEventListener('click', (ev) => {
+        unlock();
+        const p = Layout.clientToGame(ev.clientX, ev.clientY);
+        if (!p) return;
+        // Check the in-canvas RESTART button when in gameover.
+        const btn = State._restartBtn;
+        if (btn && State.phase === 'gameover'
+            && p.x >= btn.x && p.x <= btn.x + btn.w
+            && p.y >= btn.y && p.y <= btn.y + btn.h) {
+          Game.restart();
+          return;
+        }
+        Game.tryStart();
+      });
       // Don't fire tap-start from touch — it's used for swipe gestures.
       // The dpad buttons already handle their own touchstart.
     },
@@ -757,6 +772,63 @@
     },
   };
 
+  // ---------- Layout / HiDPI sizing ----------
+  // The game draws to a logical 480×640 surface (W × H). The Layout
+  // module picks a CSS display size that fits the viewport while
+  // preserving the 3:4 aspect ratio, and a backing-store size scaled by
+  // devicePixelRatio so the result stays crisp on HiDPI screens. Touch
+  // input is converted from CSS pixels to game coordinates via the
+  // current scale factor.
+  const Layout = {
+    canvas: null,
+    cssW: 480,       // current CSS display size
+    cssH: 640,
+    scale: 1,        // backing-store pixels per CSS pixel (= dpr)
+    fit() {
+      if (!this.canvas) return;
+      // Available space: viewport minus padding the CSS already reserves
+      // for the touch dpad. window.innerWidth/Height are in CSS pixels.
+      const wrap = this.canvas.parentElement;
+      const wrapStyle = wrap ? getComputedStyle(wrap) : null;
+      // Reserve room for the dpad when it's displayed.
+      const dpad = document.getElementById('touch-controls');
+      const dpadVisible = dpad && getComputedStyle(dpad).display !== 'none';
+      const dpadH = dpadVisible ? (dpad.offsetHeight + 12) : 0;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight - dpadH;
+      // Reserve a tiny margin so the canvas doesn't kiss the edge.
+      const maxW = Math.max(160, vw - 16);
+      const maxH = Math.max(160, vh - 16);
+      // Fit 3:4 inside the available rect.
+      const aspect = W / H;
+      let cssW = maxW, cssH = maxW / aspect;
+      if (cssH > maxH) { cssH = maxH; cssW = maxH * aspect; }
+      cssW = Math.max(160, Math.floor(cssW));
+      cssH = Math.max(160, Math.floor(cssH));
+      // Round to whole CSS pixels to keep the layout subpixel-clean.
+      this.cssW = cssW;
+      this.cssH = cssH;
+      // HiDPI: scale backing store by devicePixelRatio, capped so
+      // 4K monitors don't allocate a 50MB canvas.
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      this.scale = dpr;
+      this.canvas.style.width = cssW + 'px';
+      this.canvas.style.height = cssH + 'px';
+      this.canvas.width = Math.floor(cssW * dpr);
+      this.canvas.height = Math.floor(cssH * dpr);
+    },
+    // Map a clientX/clientY (CSS pixels, relative to viewport) into
+    // game logical coordinates (0..W, 0..H). Returns null if outside.
+    clientToGame(clientX, clientY) {
+      if (!this.canvas) return null;
+      const rect = this.canvas.getBoundingClientRect();
+      const x = (clientX - rect.left) * (W / rect.width);
+      const y = (clientY - rect.top) * (H / rect.height);
+      if (x < 0 || y < 0 || x > W || y > H) return null;
+      return { x, y };
+    },
+  };
+
   // ---------- Render ----------
   const Render = {
     ctx: null,
@@ -764,11 +836,24 @@
     init(canvas) {
       this.ctx = canvas.getContext('2d');
       this.ctx.imageSmoothingEnabled = false;
+      Layout.canvas = canvas;
+      Layout.fit();
     },
     // Frame entry point.
     frame() {
       const ctx = this.ctx;
+      // First: clear the entire backing store (in raw backing-store
+      // pixels, no transform). Without this, when the CSS display size
+      // doesn't divide evenly into W/H, leftover pixels from a prior
+      // resize would show through.
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, Layout.canvas.width, Layout.canvas.height);
+      // Switch to game-logical coords for the rest of the frame.
+      ctx.setTransform(Layout.scale, 0, 0, Layout.scale, 0, 0);
       ctx.clearRect(0, 0, W, H);
+      // Clear stale restart-button rect when not in gameover so a late
+      // click doesn't hit-test against an old rect.
+      if (State.phase !== 'gameover') State._restartBtn = null;
       this.drawHud();
       this.drawField();
       this.drawFrog();
@@ -1143,9 +1228,12 @@
         if (State.highScore > 0) lines.push('BEST ' + State.highScore);
         lines.push('LV ' + State.bestLevel);
         lines.push('');
-        lines.push('SPACE TO RETRY');
+        lines.push('PRESS SPACE OR TAP BUTTON');
         lines.push('SHIFT+R CLEARS BEST');
         this.drawPanel(State.justBeatBest ? 'NEW BEST!' : 'GAME OVER', lines);
+        // Draw the actual RESTART button below the panel and remember
+        // its rect so the canvas click handler can hit-test it.
+        this.drawRestartButton();
       } else if (State.phase === 'roundwin') {
         this.drawPanel('LEVEL ' + State.level + ' CLEAR', [
           'BONUS +' + LEVEL_BONUS,
@@ -1197,6 +1285,24 @@
         ctx.fillText('— PRESS SPACE —', W / 2, py + ph - 22);
       }
     },
+    drawRestartButton() {
+      const ctx = this.ctx;
+      const bw = 200, bh = 44;
+      const bx = Math.floor((W - bw) / 2);
+      const by = 200 + 220 + 16;       // panel bottom + gap
+      // Button rect
+      ctx.fillStyle = '#39d353';
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.strokeStyle = '#0a1a0a';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bx + 1, by + 1, bw - 2, bh - 2);
+      ctx.fillStyle = '#0a1a0a';
+      ctx.font = 'bold 18px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('RESTART', bx + bw / 2, by + bh / 2);
+      State._restartBtn = { x: bx, y: by, w: bw, h: bh };
+    },
     drawTitleDemoFrog() {
       const ctx = this.ctx;
       const t = performance.now() / 1000;
@@ -1243,10 +1349,26 @@
 // ---------- Boot ----------
   function boot() {
     const canvas = document.getElementById('game');
-    canvas.width = W;
-    canvas.height = H;
     Render.init(canvas);
     Input.bind(canvas);
+    // Resize handler: re-fit the canvas whenever the viewport changes.
+    // Listen for resize and orientationchange (some browsers fire one
+    // and not the other).
+    let resizeRaf = 0;
+    const onResize = () => {
+      if (resizeRaf) return;
+      resizeRaf = requestAnimationFrame(() => {
+        resizeRaf = 0;
+        Layout.fit();
+      });
+    };
+    global.addEventListener('resize', onResize);
+    global.addEventListener('orientationchange', onResize);
+    // visualViewport also fires when the URL bar appears/disappears on
+    // mobile — keep the canvas matched to the visible area.
+    if (global.visualViewport) {
+      global.visualViewport.addEventListener('resize', onResize);
+    }
     // Load high score
     try {
       const hs = parseInt(localStorage.getItem('frogger.high') || '0', 10);
@@ -1265,4 +1387,7 @@
   global.State = State;
   global.Frog = Frog;
   global.Input = Input;
+  global.Layout = Layout;
+  global.W = W;
+  global.H = H;
 })(window);

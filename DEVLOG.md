@@ -492,3 +492,48 @@ Ideas considered and rejected:
 Final state: 18 iterations, 19 commits, 6 source files
 (`index.html`, `styles.css`, `audio.js`, `game.js`, `smoke.js`,
 `smoke.png` / `smoke-title.png`), 0 dependencies.
+
+## Spec-4 fix — 2026-07-26 — Responsive canvas, HiDPI, restart button
+
+**What:** Added a real `Layout` module that fits the canvas to the
+viewport while preserving the 3:4 aspect ratio, scales the backing
+store by `devicePixelRatio` (capped at 2x) so HiDPI displays stay
+crisp, and exposes `clientToGame()` for converting tap coordinates.
+`Render.frame()` calls `ctx.setTransform(Layout.scale, ...)` every
+frame and clears the full backing store before drawing in game-logical
+coordinates. Resize/orientationchange/visualViewport listeners all
+call `Layout.fit()` (rAF-throttled). The Game Over panel now draws an
+actual RESTART button below the panel; the canvas click handler
+hit-tests the button rect via `Layout.clientToGame` before falling
+back to `Game.tryStart()` for the "tap to start" path. dpad CSS got
+`flex-direction: column` so the up button sits above the
+left/down/right row (it was rendering in a single row before).
+
+**Why:** A code review flagged that the v18 build didn't actually
+handle window resizing, didn't account for devicePixelRatio, and the
+"working restart button" spec point was just a "press Space" prompt
+— no clickable button.
+
+**Measured:** New `smoke-responsive.js` runs two contexts (mobile
+390x844 @2x and desktop 1280x800 @1x). Both confirm:
+- Canvas has non-zero CSS display size within the viewport.
+- HiDPI backing store scales with devicePixelRatio (748×996 @2x vs
+  588×784 @1x).
+- Canvas re-fits when the viewport shrinks.
+- Tap coordinates map back to game coordinates correctly.
+- Clicking the in-canvas RESTART button transitions phase from
+  'gameover' → 'title' and resets lives to 5, score to 0.
+
+The original `smoke.js` still passes (its countdown timing already
+accounted for the 1.5 s gate).
+
+**Rejected:**
+- CSS `aspect-ratio` only — the v1 layout had this but the canvas
+  was a fixed 480×640 backing store, so HiDPI screens were blurry and
+  resizes didn't redraw until the next frame.
+- Adding an `<input type="button">` HTML overlay for restart — would
+  need its own CSS positioning logic per layout; the in-canvas
+  rect + hit-test is one less moving piece.
+- Listening to `window.resize` only — some mobile browsers fire
+  `orientationchange` and not `resize` (and vice versa), so all three
+  (resize, orientationchange, visualViewport.resize) are bound.
